@@ -1,8 +1,8 @@
 #include "raylib.h"
-#include "projectile.h"
 #include "enemy.h"
 #include "game.h"
 #include "starfield.h"
+#include "laser.h"
 
 void InitGame(int* score, int* lives);
 
@@ -27,7 +27,6 @@ int main(void)
 
     InitAudioDevice();
 
-    // NOTE: Make sure you have shoot.wav and explosion.wav in the resources directory
     Sound shootSound = LoadSound("resources/shoot.wav");
     Sound explosionSound = LoadSound("resources/explosion.wav");
 
@@ -49,13 +48,13 @@ int main(void)
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
                 {
                     Ray ray = GetMouseRay(GetMousePosition(), camera);
-                    ShootProjectile(ray);
+                    score += FireLasers(ray, camera, explosionSound);
                     PlaySound(shootSound);
                 }
 
-                UpdateProjectiles();
+                UpdateLasers();
                 UpdateStarfield();
-                score += UpdateEnemies(explosionSound, &lives);
+                UpdateEnemies(&lives);
 
                 if (lives <= 0)
                 {
@@ -85,8 +84,8 @@ int main(void)
         {
             BeginMode3D(camera);
             DrawStarfield();
-            DrawProjectiles();
             DrawEnemies();
+            DrawLasers();
             EndMode3D();
 
             DrawCircleLines(GetMouseX(), GetMouseY(), 10, MAROON);
@@ -119,7 +118,7 @@ void InitGame(int* score, int* lives)
 {
     *score = 0;
     *lives = 3;
-    InitProjectiles();
+    InitLasers();
     InitEnemies();
     InitStarfield();
 }

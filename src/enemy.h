@@ -19,7 +19,7 @@ typedef struct Enemy {
 extern Enemy enemies[MAX_ENEMIES];
 
 void InitEnemies(void);
-int UpdateEnemies(Sound explosionSound, int* lives);
+void UpdateEnemies(int* lives);
 void DrawEnemies(void);
 
 #endif // ENEMY_H

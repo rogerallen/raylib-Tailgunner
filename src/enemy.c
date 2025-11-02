@@ -1,6 +1,5 @@
 #include "enemy.h"
-#include "projectile.h"
-#include <math.h>
+#include "raymath.h"
 
 Enemy enemies[MAX_ENEMIES];
 
@@ -65,9 +64,8 @@ void SpawnWave(void)
     }
 }
 
-int UpdateEnemies(Sound explosionSound, int* lives)
+void UpdateEnemies(int* lives)
 {
-    int hits = 0;
     int activeEnemies = 0;
 
     for (int i = 0; i < MAX_ENEMIES; i++)
@@ -84,20 +82,6 @@ int UpdateEnemies(Sound explosionSound, int* lives)
                 enemies[i].active = false;
                 (*lives)--;
             }
-
-            for (int j = 0; j < MAX_PROJECTILES; j++)
-            {
-                if (projectiles[j].active)
-                {
-                    if (CheckCollisionSpheres(enemies[i].position, enemies[i].radius, projectiles[j].position, projectiles[j].radius))
-                    {
-                        enemies[i].active = false;
-                        projectiles[j].active = false;
-                        PlaySound(explosionSound);
-                        hits++;
-                    }
-                }
-            }
         }
     }
 
@@ -105,8 +89,6 @@ int UpdateEnemies(Sound explosionSound, int* lives)
     {
         SpawnWave();
     }
-
-    return hits;
 }
 
 void DrawEnemies(void)
