@@ -3,6 +3,7 @@
 #include "game.h"
 #include "starfield.h"
 #include "laser.h"
+#include "forcefield.h"
 
 void InitGame(int* score, int* lives, int* wave);
 
@@ -53,9 +54,15 @@ int main(void)
                     PlaySound(shootSound);
                 }
 
+                if (IsKeyPressed(KEY_SPACE))
+                {
+                    ActivateForceField();
+                }
+
                 UpdateLasers();
                 UpdateStarfield();
                 UpdateEnemies(&lives, &wave);
+                UpdateForceField();
 
                 if (lives <= 0)
                 {
@@ -87,6 +94,7 @@ int main(void)
             DrawStarfield();
             DrawEnemies();
             DrawLasers();
+            DrawForceField();
             EndMode3D();
 
             DrawCircleLines(GetMouseX(), GetMouseY(), 10, MAROON);
@@ -96,6 +104,7 @@ int main(void)
             DrawText(TextFormat("Score: %i", score), 10, 10, 20, GREEN);
             DrawText(TextFormat("Lives: %i", lives), GetScreenWidth() - 100, 10, 20, RED);
             DrawText(TextFormat("Wave: %i", wave), GetScreenWidth() / 2 - 20, 10, 20, YELLOW);
+            DrawForceFieldUI();
         }
         else if (gameState == STATE_GAME_OVER)
         {
@@ -124,4 +133,5 @@ void InitGame(int* score, int* lives, int* wave)
     InitLasers();
     InitEnemies();
     InitStarfield();
+    InitForceField();
 }

@@ -46,6 +46,9 @@ void InitEnemies(void)
         enemies[i].active = false;
         enemies[i].radius = 1.0f;
         enemies[i].color = BLUE;
+        enemies[i].state = ENEMY_STATE_NORMAL;
+        enemies[i].rotationAxis = (Vector3){ 0.0f, 1.0f, 0.0f };
+        enemies[i].rotationAngle = 0.0f;
     }
 }
 
@@ -70,6 +73,7 @@ void SpawnWave(int wave)
         for (int i = 0; i < waveSize; i++)
         {
             enemies[enemyIndex[i]].active = true;
+            enemies[enemyIndex[i]].state = ENEMY_STATE_NORMAL;
             enemies[enemyIndex[i]].t = 0.0f;
 
             float zOffset = i * -10.0f;
@@ -93,13 +97,32 @@ void UpdateEnemies(int* lives, int* wave)
         {
             activeEnemies++;
 
-            enemies[i].t += 0.0025f + (*wave * 0.0001f);
-            enemies[i].position = GetCubicBezierPoint(enemies[i].p0, enemies[i].p1, enemies[i].p2, enemies[i].p3, enemies[i].t);
-
-            if (enemies[i].t >= 1.0f)
+            switch (enemies[i].state)
             {
-                enemies[i].active = false;
-                (*lives)--;
+                case ENEMY_STATE_NORMAL:
+                {
+                    enemies[i].t += 0.0025f + (*wave * 0.0001f);
+                    enemies[i].position = GetCubicBezierPoint(enemies[i].p0, enemies[i].p1, enemies[i].p2, enemies[i].p3, enemies[i].t);
+
+                    if (enemies[i].t >= 1.0f)
+                    {
+                        enemies[i].active = false;
+                        (*lives)--;
+                    }
+                } break;
+                case ENEMY_STATE_REPELLED:
+                {
+                    enemies[i].repel_t += 0.01f;
+                    enemies[i].position = Vector3Lerp(enemies[i].repel_start_pos, enemies[i].p0, enemies[i].repel_t);
+                    enemies[i].rotationAngle += 360.0f * GetFrameTime();
+
+                    if (enemies[i].repel_t >= 1.0f)
+                    {
+                        enemies[i].state = ENEMY_STATE_NORMAL;
+                        enemies[i].t = 0.0f;
+                        enemies[i].rotationAngle = 0.0f;
+                    }
+                } break;
             }
         }
     }
@@ -128,6 +151,8 @@ void DrawEnemyShip(Enemy enemy)
     float fin_r = 1.0f; // Fin size
 
     Vector3 forward = GetCubicBezierTangent(enemy.p0, enemy.p1, enemy.p2, enemy.p3, enemy.t);
+    if (enemy.state == ENEMY_STATE_REPELLED) forward = Vector3Normalize(Vector3Subtract(enemy.p0, enemy.position));
+
     Vector3 up = { 0.0f, 1.0f, 0.0f };
     Vector3 right = Vector3CrossProduct(forward, up);
     up = Vector3CrossProduct(right, forward);
@@ -141,6 +166,7 @@ void DrawEnemyShip(Enemy enemy)
 
     rlPushMatrix();
     rlMultMatrixf(MatrixToFloat(transform));
+    rlRotatef(enemy.rotationAngle, enemy.rotationAxis.x, enemy.rotationAxis.y, enemy.rotationAxis.z);
 
     Vector3 v_top = { 0, r, 0 };
     Vector3 v_bottom = { 0, -r, 0 };
