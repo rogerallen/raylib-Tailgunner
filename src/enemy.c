@@ -1,4 +1,3 @@
-
 #include "enemy.h"
 #include "projectile.h"
 #include <math.h>
@@ -27,7 +26,6 @@ void InitEnemies(void)
     for (int i = 0; i < MAX_ENEMIES; i++)
     {
         enemies[i].active = false;
-        enemies[i].state = ENEMY_STATE_INACTIVE;
         enemies[i].radius = 0.5f;
         enemies[i].color = BLUE;
     }
@@ -54,18 +52,15 @@ void SpawnWave(void)
         for (int i = 0; i < waveSize; i++)
         {
             enemies[enemyIndex[i]].active = true;
-            enemies[enemyIndex[i]].state = ENEMY_STATE_ARRIVING;
             enemies[enemyIndex[i]].t = 0.0f;
 
             float zOffset = i * -10.0f;
+            int side = (i % 2 == 0) ? 1 : -1;
 
-            // Phase 1: Arrive near the center
-            enemies[enemyIndex[i]].p0 = (Vector3){ GetRandomValue(-20, 20), GetRandomValue(-20, 20), -100.0f + zOffset };
-            enemies[enemyIndex[i]].p1 = (Vector3){ GetRandomValue(-5, 5), GetRandomValue(-5, 5), -50.0f + zOffset };
-
-            // Phase 2: Attack curve
-            enemies[enemyIndex[i]].p2 = (Vector3){ (float)GetRandomValue(-20, 20), (float)GetRandomValue(-10, 10), -25.0f };
-            enemies[enemyIndex[i]].p3 = (Vector3){ (float)GetRandomValue(20, 40) * (i % 2 == 0 ? 1 : -1), (float)GetRandomValue(-10, 10), 10.0f };
+            enemies[enemyIndex[i]].p0 = (Vector3){ (float)GetRandomValue(-20, 20), (float)GetRandomValue(-20, 20), -100.0f + zOffset };
+            enemies[enemyIndex[i]].p1 = (Vector3){ (float)GetRandomValue(-5, 5), (float)GetRandomValue(-5, 5), -50.0f + zOffset };
+            enemies[enemyIndex[i]].p2 = (Vector3){ (float)GetRandomValue(-40, -20) * side, (float)GetRandomValue(10, 20), -25.0f };
+            enemies[enemyIndex[i]].p3 = (Vector3){ (float)GetRandomValue(20, 40) * side, (float)GetRandomValue(-20, -10), 10.0f };
         }
     }
 }
@@ -81,32 +76,13 @@ int UpdateEnemies(Sound explosionSound, int* lives)
         {
             activeEnemies++;
 
-            switch (enemies[i].state)
+            enemies[i].t += 0.0025f;
+            enemies[i].position = GetCubicBezierPoint(enemies[i].p0, enemies[i].p1, enemies[i].p2, enemies[i].p3, enemies[i].t);
+
+            if (enemies[i].t >= 1.0f)
             {
-                case ENEMY_STATE_ARRIVING:
-                {
-                    enemies[i].t += 0.005f;
-                    enemies[i].position = GetCubicBezierPoint(enemies[i].p0, enemies[i].p1, enemies[i].p1, enemies[i].p1, enemies[i].t);
-
-                    if (enemies[i].t >= 1.0f)
-                    {
-                        enemies[i].state = ENEMY_STATE_ATTACKING;
-                        enemies[i].t = 0.0f;
-                    }
-                } break;
-                case ENEMY_STATE_ATTACKING:
-                {
-                    enemies[i].t += 0.005f;
-                    enemies[i].position = GetCubicBezierPoint(enemies[i].p1, enemies[i].p2, enemies[i].p3, enemies[i].p3, enemies[i].t);
-
-                    if (enemies[i].t >= 1.0f)
-                    {
-                        enemies[i].active = false;
-                        enemies[i].state = ENEMY_STATE_INACTIVE;
-                        (*lives)--;
-                    }
-                } break;
-                default: break;
+                enemies[i].active = false;
+                (*lives)--;
             }
 
             for (int j = 0; j < MAX_PROJECTILES; j++)
@@ -116,7 +92,6 @@ int UpdateEnemies(Sound explosionSound, int* lives)
                     if (CheckCollisionSpheres(enemies[i].position, enemies[i].radius, projectiles[j].position, projectiles[j].radius))
                     {
                         enemies[i].active = false;
-                        enemies[i].state = ENEMY_STATE_INACTIVE;
                         projectiles[j].active = false;
                         PlaySound(explosionSound);
                         hits++;
