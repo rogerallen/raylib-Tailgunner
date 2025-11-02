@@ -4,7 +4,7 @@
 #include "starfield.h"
 #include "laser.h"
 
-void InitGame(int* score, int* lives);
+void InitGame(int* score, int* lives, int* wave);
 
 int main(void)
 {
@@ -24,6 +24,7 @@ int main(void)
 
     int score = 0;
     int lives = 0;
+    int wave = 0;
 
     InitAudioDevice();
 
@@ -38,7 +39,7 @@ int main(void)
             {
                 if (IsKeyPressed(KEY_ENTER) || IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
                 {
-                    InitGame(&score, &lives);
+                    InitGame(&score, &lives, &wave);
                     gameState = STATE_PLAYING;
                     HideCursor();
                 }
@@ -54,7 +55,7 @@ int main(void)
 
                 UpdateLasers();
                 UpdateStarfield();
-                UpdateEnemies(&lives);
+                UpdateEnemies(&lives, &wave);
 
                 if (lives <= 0)
                 {
@@ -94,6 +95,7 @@ int main(void)
 
             DrawText(TextFormat("Score: %i", score), 10, 10, 20, GREEN);
             DrawText(TextFormat("Lives: %i", lives), GetScreenWidth() - 100, 10, 20, RED);
+            DrawText(TextFormat("Wave: %i", wave), GetScreenWidth() / 2 - 20, 10, 20, YELLOW);
         }
         else if (gameState == STATE_GAME_OVER)
         {
@@ -114,10 +116,11 @@ int main(void)
     return 0;
 }
 
-void InitGame(int* score, int* lives)
+void InitGame(int* score, int* lives, int* wave)
 {
     *score = 0;
     *lives = 3;
+    *wave = 1;
     InitLasers();
     InitEnemies();
     InitStarfield();

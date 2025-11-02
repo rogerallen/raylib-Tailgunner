@@ -6,6 +6,7 @@ Enemy enemies[MAX_ENEMIES];
 
 void DrawEnemyShip(Enemy enemy);
 Vector3 GetCubicBezierTangent(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t);
+void SpawnWave(int wave);
 
 // Function to calculate a point on a cubic Bezier curve
 Vector3 GetCubicBezierPoint(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
@@ -48,7 +49,7 @@ void InitEnemies(void)
     }
 }
 
-void SpawnWave(void)
+void SpawnWave(int wave)
 {
     int waveSize = 3;
     int enemyIndex[waveSize];
@@ -82,7 +83,7 @@ void SpawnWave(void)
     }
 }
 
-void UpdateEnemies(int* lives)
+void UpdateEnemies(int* lives, int* wave)
 {
     int activeEnemies = 0;
 
@@ -92,7 +93,7 @@ void UpdateEnemies(int* lives)
         {
             activeEnemies++;
 
-            enemies[i].t += 0.0025f;
+            enemies[i].t += 0.0025f + (*wave * 0.0001f);
             enemies[i].position = GetCubicBezierPoint(enemies[i].p0, enemies[i].p1, enemies[i].p2, enemies[i].p3, enemies[i].t);
 
             if (enemies[i].t >= 1.0f)
@@ -105,7 +106,8 @@ void UpdateEnemies(int* lives)
 
     if (activeEnemies == 0)
     {
-        SpawnWave();
+        (*wave)++;
+        SpawnWave(*wave);
     }
 }
 
