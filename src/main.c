@@ -55,16 +55,7 @@ int main(void)
 
                 UpdateProjectiles();
                 UpdateStarfield();
-                score += UpdateEnemies(explosionSound);
-
-                for (int i = 0; i < MAX_ENEMIES; i++)
-                {
-                    if (enemies[i].active && enemies[i].position.z > 0)
-                    {
-                        lives--;
-                        enemies[i].active = false; // Deactivate the enemy so it doesn't trigger again
-                    }
-                }
+                score += UpdateEnemies(explosionSound, &lives);
 
                 if (lives <= 0)
                 {
