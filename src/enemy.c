@@ -3,6 +3,8 @@
 
 Enemy enemies[MAX_ENEMIES];
 
+void DrawEnemyShip(Enemy enemy);
+
 // Function to calculate a point on a cubic Bezier curve
 Vector3 GetCubicBezierPoint(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
 {
@@ -25,7 +27,7 @@ void InitEnemies(void)
     for (int i = 0; i < MAX_ENEMIES; i++)
     {
         enemies[i].active = false;
-        enemies[i].radius = 0.5f;
+        enemies[i].radius = 1.0f;
         enemies[i].color = BLUE;
     }
 }
@@ -74,7 +76,7 @@ void UpdateEnemies(int* lives)
         {
             activeEnemies++;
 
-            enemies[i].t += 0.0015f;
+            enemies[i].t += 0.0025f;
             enemies[i].position = GetCubicBezierPoint(enemies[i].p0, enemies[i].p1, enemies[i].p2, enemies[i].p3, enemies[i].t);
 
             if (enemies[i].t >= 1.0f)
@@ -97,7 +99,54 @@ void DrawEnemies(void)
     {
         if (enemies[i].active)
         {
-            DrawCube(enemies[i].position, enemies[i].radius * 2, enemies[i].radius * 2, enemies[i].radius * 2, enemies[i].color);
+            DrawEnemyShip(enemies[i]);
         }
     }
+}
+
+void DrawEnemyShip(Enemy enemy)
+{
+    float r = enemy.radius;
+    Vector3 pos = enemy.position;
+
+    Vector3 v_top = { pos.x, pos.y + r, pos.z };
+    Vector3 v_bottom = { pos.x, pos.y - r, pos.z };
+    Vector3 v_right = { pos.x + r, pos.y, pos.z };
+    Vector3 v_left = { pos.x - r, pos.y, pos.z };
+    Vector3 v_front = { pos.x, pos.y, pos.z + r };
+    Vector3 v_back = { pos.x, pos.y, pos.z - r };
+
+    // Main body
+    DrawLine3D(v_front, v_top, enemy.color);
+    DrawLine3D(v_front, v_bottom, enemy.color);
+    DrawLine3D(v_front, v_left, enemy.color);
+    DrawLine3D(v_front, v_right, enemy.color);
+
+    DrawLine3D(v_back, v_top, enemy.color);
+    DrawLine3D(v_back, v_bottom, enemy.color);
+    DrawLine3D(v_back, v_left, enemy.color);
+    DrawLine3D(v_back, v_right, enemy.color);
+
+    DrawLine3D(v_top, v_right, enemy.color);
+    DrawLine3D(v_right, v_bottom, enemy.color);
+    DrawLine3D(v_bottom, v_left, enemy.color);
+    DrawLine3D(v_left, v_top, enemy.color);
+
+    // Fins
+    Vector3 fin_top_back = { pos.x, pos.y + r * 1.5f, pos.z - r * 1.5f };
+    Vector3 fin_bottom_back = { pos.x, pos.y - r * 1.5f, pos.z - r * 1.5f };
+    Vector3 fin_left_back = { pos.x - r * 1.5f, pos.y, pos.z - r * 1.5f };
+    Vector3 fin_right_back = { pos.x + r * 1.5f, pos.y, pos.z - r * 1.5f };
+
+    DrawLine3D(v_top, fin_top_back, enemy.color);
+    DrawLine3D(v_back, fin_top_back, enemy.color);
+
+    DrawLine3D(v_bottom, fin_bottom_back, enemy.color);
+    DrawLine3D(v_back, fin_bottom_back, enemy.color);
+
+    DrawLine3D(v_left, fin_left_back, enemy.color);
+    DrawLine3D(v_back, fin_left_back, enemy.color);
+
+    DrawLine3D(v_right, fin_right_back, enemy.color);
+    DrawLine3D(v_back, fin_right_back, enemy.color);
 }
