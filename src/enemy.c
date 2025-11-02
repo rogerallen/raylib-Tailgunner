@@ -56,7 +56,7 @@ void SpawnWave(void)
     }
 }
 
-int UpdateEnemies(Sound explosionSound) // FIXME add explosionSound usage
+int UpdateEnemies(Sound explosionSound)
 {
     int hits = 0;
     int activeEnemies = 0;
@@ -79,6 +79,7 @@ int UpdateEnemies(Sound explosionSound) // FIXME add explosionSound usage
                     {
                         enemies[i].active = false;
                         projectiles[j].active = false;
+                        PlaySound(explosionSound);
                         hits++;
                     }
                 }
