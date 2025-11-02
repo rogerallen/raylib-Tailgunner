@@ -123,6 +123,7 @@ void DrawEnemies(void)
 void DrawEnemyShip(Enemy enemy)
 {
     float r = enemy.radius;
+    float fin_r = 1.0f; // Fin size
 
     Vector3 forward = GetCubicBezierTangent(enemy.p0, enemy.p1, enemy.p2, enemy.p3, enemy.t);
     Vector3 up = { 0.0f, 1.0f, 0.0f };
@@ -143,8 +144,8 @@ void DrawEnemyShip(Enemy enemy)
     Vector3 v_bottom = { 0, -r, 0 };
     Vector3 v_right = { r, 0, 0 };
     Vector3 v_left = { -r, 0, 0 };
-    Vector3 v_front = { 0, 0, r };
-    Vector3 v_back = { 0, 0, -r };
+    Vector3 v_front = { 0, 0, r * 2 }; // 2x longer
+    Vector3 v_back = { 0, 0, -r * 2 }; // 2x longer
 
     // Main body
     DrawLine3D(v_front, v_top, enemy.color);
@@ -163,10 +164,10 @@ void DrawEnemyShip(Enemy enemy)
     DrawLine3D(v_left, v_top, enemy.color);
 
     // Fins
-    Vector3 fin_top_back = { 0, r * 1.5f, -r * 1.5f };
-    Vector3 fin_bottom_back = { 0, -r * 1.5f, -r * 1.5f };
-    Vector3 fin_left_back = { -r * 1.5f, 0, -r * 1.5f };
-    Vector3 fin_right_back = { r * 1.5f, 0, -r * 1.5f };
+    Vector3 fin_top_back = { 0, fin_r, -r * 2 - fin_r };
+    Vector3 fin_bottom_back = { 0, -fin_r, -r * 2 - fin_r };
+    Vector3 fin_left_back = { -fin_r, 0, -r * 2 - fin_r };
+    Vector3 fin_right_back = { fin_r, 0, -r * 2 - fin_r };
 
     DrawLine3D(v_top, fin_top_back, enemy.color);
     DrawLine3D(v_back, fin_top_back, enemy.color);
