@@ -1,9 +1,11 @@
 #include "enemy.h"
 #include "raymath.h"
+#include "rlgl.h"
 
 Enemy enemies[MAX_ENEMIES];
 
 void DrawEnemyShip(Enemy enemy);
+Vector3 GetCubicBezierTangent(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t);
 
 // Function to calculate a point on a cubic Bezier curve
 Vector3 GetCubicBezierPoint(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
@@ -20,6 +22,20 @@ Vector3 GetCubicBezierPoint(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, floa
     result.z = uuu * p0.z + 3 * uu * t * p1.z + 3 * u * tt * p2.z + ttt * p3.z;
 
     return result;
+}
+
+Vector3 GetCubicBezierTangent(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
+{
+    Vector3 result;
+    float u = 1.0f - t;
+    float tt = t * t;
+    float uu = u * u;
+
+    result.x = 3 * uu * (p1.x - p0.x) + 6 * u * t * (p2.x - p1.x) + 3 * tt * (p3.x - p2.x);
+    result.y = 3 * uu * (p1.y - p0.y) + 6 * u * t * (p2.y - p1.y) + 3 * tt * (p3.y - p2.y);
+    result.z = 3 * uu * (p1.z - p0.z) + 6 * u * t * (p2.z - p1.z) + 3 * tt * (p3.z - p2.z);
+
+    return Vector3Normalize(result);
 }
 
 void InitEnemies(void)
@@ -107,14 +123,28 @@ void DrawEnemies(void)
 void DrawEnemyShip(Enemy enemy)
 {
     float r = enemy.radius;
-    Vector3 pos = enemy.position;
 
-    Vector3 v_top = { pos.x, pos.y + r, pos.z };
-    Vector3 v_bottom = { pos.x, pos.y - r, pos.z };
-    Vector3 v_right = { pos.x + r, pos.y, pos.z };
-    Vector3 v_left = { pos.x - r, pos.y, pos.z };
-    Vector3 v_front = { pos.x, pos.y, pos.z + r };
-    Vector3 v_back = { pos.x, pos.y, pos.z - r };
+    Vector3 forward = GetCubicBezierTangent(enemy.p0, enemy.p1, enemy.p2, enemy.p3, enemy.t);
+    Vector3 up = { 0.0f, 1.0f, 0.0f };
+    Vector3 right = Vector3CrossProduct(forward, up);
+    up = Vector3CrossProduct(right, forward);
+
+    Matrix transform = {
+        right.x, up.x, forward.x, enemy.position.x,
+        right.y, up.y, forward.y, enemy.position.y,
+        right.z, up.z, forward.z, enemy.position.z,
+        0, 0, 0, 1
+    };
+
+    rlPushMatrix();
+    rlMultMatrixf(MatrixToFloat(transform));
+
+    Vector3 v_top = { 0, r, 0 };
+    Vector3 v_bottom = { 0, -r, 0 };
+    Vector3 v_right = { r, 0, 0 };
+    Vector3 v_left = { -r, 0, 0 };
+    Vector3 v_front = { 0, 0, r };
+    Vector3 v_back = { 0, 0, -r };
 
     // Main body
     DrawLine3D(v_front, v_top, enemy.color);
@@ -133,10 +163,10 @@ void DrawEnemyShip(Enemy enemy)
     DrawLine3D(v_left, v_top, enemy.color);
 
     // Fins
-    Vector3 fin_top_back = { pos.x, pos.y + r * 1.5f, pos.z - r * 1.5f };
-    Vector3 fin_bottom_back = { pos.x, pos.y - r * 1.5f, pos.z - r * 1.5f };
-    Vector3 fin_left_back = { pos.x - r * 1.5f, pos.y, pos.z - r * 1.5f };
-    Vector3 fin_right_back = { pos.x + r * 1.5f, pos.y, pos.z - r * 1.5f };
+    Vector3 fin_top_back = { 0, r * 1.5f, -r * 1.5f };
+    Vector3 fin_bottom_back = { 0, -r * 1.5f, -r * 1.5f };
+    Vector3 fin_left_back = { -r * 1.5f, 0, -r * 1.5f };
+    Vector3 fin_right_back = { r * 1.5f, 0, -r * 1.5f };
 
     DrawLine3D(v_top, fin_top_back, enemy.color);
     DrawLine3D(v_back, fin_top_back, enemy.color);
@@ -149,4 +179,6 @@ void DrawEnemyShip(Enemy enemy)
 
     DrawLine3D(v_right, fin_right_back, enemy.color);
     DrawLine3D(v_back, fin_right_back, enemy.color);
+
+    rlPopMatrix();
 }
