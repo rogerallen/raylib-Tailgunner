@@ -57,17 +57,21 @@ void UpdateForceField(void)
     }
 }
 
-void DrawForceField(void)
+void DrawForceField2D(void)
 {
     if (ff_state == FF_STATE_ACTIVE)
     {
-        for (int i = 0; i < 5; i++)
+        int screenWidth = GetScreenWidth();
+        int screenHeight = GetScreenHeight();
+        int cellWidth = screenWidth / 4;
+        int cellHeight = screenHeight / 2;
+
+        for (int y = 0; y < 2; y++)
         {
-            rlPushMatrix();
-            rlRotatef(45 + i * 10, 1, 0, 0);
-            rlRotatef(45 + i * 10, 0, 1, 0);
-            DrawCubeWires((Vector3){ 0.0f, 0.0f, 0.0f }, 20.0f - i * 2, 20.0f - i * 2, 20.0f - i * 2, LIME);
-            rlPopMatrix();
+            for (int x = 0; x < 4; x++)
+            {
+                DrawRectangleLines(x * cellWidth, y * cellHeight, cellWidth, cellHeight, LIME);
+            }
         }
     }
 }

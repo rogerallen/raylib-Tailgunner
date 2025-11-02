@@ -94,8 +94,8 @@ int main(void)
             DrawStarfield();
             DrawEnemies();
             DrawLasers();
-            DrawForceField();
             EndMode3D();
+            DrawForceField2D();
 
             DrawCircleLines(GetMouseX(), GetMouseY(), 10, MAROON);
             DrawLine(GetMouseX() - 20, GetMouseY(), GetMouseX() + 20, GetMouseY(), RED);

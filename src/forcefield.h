@@ -19,7 +19,7 @@ extern float ff_charge;
 void InitForceField(void);
 void UpdateForceField(void);
 void ActivateForceField(void);
-void DrawForceField(void);
+void DrawForceField2D(void);
 void DrawForceFieldUI(void);
 
 #endif // FORCEFIELD_H
