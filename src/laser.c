@@ -29,8 +29,7 @@ int FireLasers(Ray ray, Camera camera, Sound explosionSound)
     {
         if (enemies[i].active)
         {
-            RayCollision collision = GetRayCollisionSphere(ray, enemies[i].position, enemies[i].radius);
-            if (collision.hit && collision.distance < closestHitDist)
+                            RayCollision collision = GetRayCollisionSphere(ray, enemies[i].position, enemies[i].radius * 1.5f);            if (collision.hit && collision.distance < closestHitDist)
             {
                 closestHitDist = collision.distance;
                 closestEnemyIndex = i;

@@ -61,17 +61,14 @@ void DrawForceField(void)
 {
     if (ff_state == FF_STATE_ACTIVE)
     {
-        rlPushMatrix();
-        rlRotatef(45, 1, 0, 0);
-        rlRotatef(45, 0, 1, 0);
-        DrawCubeWires((Vector3){ 0.0f, 0.0f, 0.0f }, 20.0f, 20.0f, 20.0f, LIME);
-        rlPopMatrix();
-
-        rlPushMatrix();
-        rlRotatef(45, 0, 1, 0);
-        rlRotatef(45, 1, 0, 0);
-        DrawCubeWires((Vector3){ 0.0f, 0.0f, 0.0f }, 18.0f, 18.0f, 18.0f, GREEN);
-        rlPopMatrix();
+        for (int i = 0; i < 5; i++)
+        {
+            rlPushMatrix();
+            rlRotatef(45 + i * 10, 1, 0, 0);
+            rlRotatef(45 + i * 10, 0, 1, 0);
+            DrawCubeWires((Vector3){ 0.0f, 0.0f, 0.0f }, 20.0f - i * 2, 20.0f - i * 2, 20.0f - i * 2, LIME);
+            rlPopMatrix();
+        }
     }
 }
 
