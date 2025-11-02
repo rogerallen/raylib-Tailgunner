@@ -74,7 +74,7 @@ void UpdateEnemies(int* lives)
         {
             activeEnemies++;
 
-            enemies[i].t += 0.0025f;
+            enemies[i].t += 0.0015f;
             enemies[i].position = GetCubicBezierPoint(enemies[i].p0, enemies[i].p1, enemies[i].p2, enemies[i].p3, enemies[i].t);
 
             if (enemies[i].t >= 1.0f)
