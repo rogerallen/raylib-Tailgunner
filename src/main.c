@@ -5,8 +5,26 @@
 #include "laser.h"
 #include "forcefield.h"
 
+//----------------------------------------------------------------------------------
+// main.c - Game entry and orchestration
+//
+// See module-level notes in repository README for high-level behavior. This file
+// initializes subsystems, runs the main loop, and tears down resources on exit.
+//
+// Implementation notes:
+// - Loads audio assets at startup and unloads at exit
+// - Keeps main loop minimal: input -> update -> render
+// - Delegates gameplay logic to subsystem modules
+//----------------------------------------------------------------------------------
+
 void InitGame(int* score, int* lives, int* wave);
 
+//----------------------------------------------------------------------------------
+// main - Implementation Notes:
+// - Initializes window, audio and resources
+// - Handles simple state machine for START/PLAYING/GAME_OVER
+// - Updates and renders subsystems each frame
+//----------------------------------------------------------------------------------
 int main(void)
 {
     const int screenWidth = 1600;
@@ -131,6 +149,12 @@ int main(void)
     return 0;
 }
 
+//----------------------------------------------------------------------------------
+// InitGame - Implementation Notes:
+// - Resets score, lives and wave to starting values
+// - Initializes all subsystems used by the gameplay loop
+// - Spawns initial enemy wave
+//----------------------------------------------------------------------------------
 void InitGame(int* score, int* lives, int* wave)
 {
     *score = 0;

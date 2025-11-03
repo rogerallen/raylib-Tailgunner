@@ -1,7 +1,35 @@
+/*******************************************************************************************
+*
+*   starfield.c - Background starfield effect implementation
+*
+*   See starfield.h for module interface documentation.
+*   
+*   Implementation notes:
+*   - Uses small 3D spheres for star representation
+*   - Stars move at constant speed independent of frame rate
+*   - Stars reset to front when passing behind camera
+*   - Randomized alpha values create depth effect
+*
+*******************************************************************************************/
+
 #include "starfield.h"
 
-Star stars[MAX_STARS];
+//----------------------------------------------------------------------------------
+// Module Variables
+//----------------------------------------------------------------------------------
 
+Star stars[MAX_STARS];    // Array of star positions and colors
+
+//----------------------------------------------------------------------------------
+// Public Function Implementations (see starfield.h for documentation)
+//----------------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------------
+// InitStarfield - Implementation Notes:
+// - Randomly distributes stars in view volume
+// - Sets varied alpha values for depth perception
+// - Initial Z positions from -200 to 0
+//----------------------------------------------------------------------------------
 void InitStarfield(void)
 {
     for (int i = 0; i < MAX_STARS; i++)
@@ -11,6 +39,12 @@ void InitStarfield(void)
     }
 }
 
+//----------------------------------------------------------------------------------
+// UpdateStarfield - Implementation Notes:
+// - Moves stars at constant 60 units/second
+// - Uses frame time for smooth movement
+// - Resets stars to Z=0 when they pass Z=-200
+//----------------------------------------------------------------------------------
 void UpdateStarfield(void)
 {
     // Make movement frame-rate independent
@@ -27,6 +61,12 @@ void UpdateStarfield(void)
     }
 }
 
+//----------------------------------------------------------------------------------
+// DrawStarfield - Implementation Notes:
+// - Renders each star as a small 3D sphere
+// - Uses star's color property including alpha
+// - Fixed size of 0.1 units for consistent appearance
+//----------------------------------------------------------------------------------
 void DrawStarfield(void)
 {
     for (int i = 0; i < MAX_STARS; i++)

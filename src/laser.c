@@ -1,9 +1,30 @@
+/*******************************************************************************************
+*
+*   laser.c - Laser weapon system implementation
+*
+*   See laser.h for module interface documentation.
+*   
+*   Implementation notes:
+*   - Uses ray-sphere intersection for enemy hit detection
+*   - Beams start slightly offset (left/right) from camera for visual effect
+*   - Overwrites oldest beam if all slots are active when firing
+*
+*******************************************************************************************/
+
 #include "laser.h"
 #include "enemy.h"
 #include "raymath.h"
 #include "config.h"
 
+//----------------------------------------------------------------------------------
+// Module Variables
+//----------------------------------------------------------------------------------
+
 Laser lasers[MAX_LASERS];
+
+//----------------------------------------------------------------------------------
+// Public Function Implementations (see laser.h for documentation)
+//----------------------------------------------------------------------------------
 
 void InitLasers(void)
 {
@@ -15,6 +36,13 @@ void InitLasers(void)
     }
 }
 
+//----------------------------------------------------------------------------------
+// FireLasers - Implementation Notes:
+// - Uses ray-sphere intersection test to detect enemy hits
+// - Places beam start points offset from camera for visual effect
+// - Only destroys closest enemy hit by ray
+// - Will overwrite oldest beam if all slots are active
+//----------------------------------------------------------------------------------
 int FireLasers(Ray ray, Camera camera, Sound explosionSound)
 {
     int hits = 0;
@@ -88,6 +116,11 @@ int FireLasers(Ray ray, Camera camera, Sound explosionSound)
     return hits;
 }
 
+//----------------------------------------------------------------------------------
+// UpdateLasers - Implementation Notes:
+// - Decrements lifetime of active beams using frame time
+// - Deactivates beams when lifetime expires
+//----------------------------------------------------------------------------------
 void UpdateLasers(void)
 {
     for (int i = 0; i < MAX_LASERS; i++)
@@ -103,6 +136,11 @@ void UpdateLasers(void)
     }
 }
 
+//----------------------------------------------------------------------------------
+// DrawLasers - Implementation Notes:
+// - Renders active laser beams as 3D lines
+// - Uses beam color property for rendering
+//----------------------------------------------------------------------------------
 void DrawLasers(void)
 {
     for (int i = 0; i < MAX_LASERS; i++)

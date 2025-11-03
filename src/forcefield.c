@@ -1,10 +1,32 @@
+/*******************************************************************************************
+*
+*   forcefield.c - Force field defensive system implementation
+*
+*   See forcefield.h for module interface documentation.
+*   
+*   Implementation notes:
+*   - Uses state machine (ready/active/cooldown) for field management
+*   - Repels enemies within FORCE_FIELD_RADIUS when active
+*   - Visual representation as 2D grid overlay
+*   - Charge system prevents continuous activation
+*
+*******************************************************************************************/
+
 #include "forcefield.h"
 #include "enemy.h"
 #include "rlgl.h"
 
-ForceFieldState ff_state;
-float ff_charge;
-float ff_timer;
+//----------------------------------------------------------------------------------
+// Module Variables
+//----------------------------------------------------------------------------------
+
+ForceFieldState ff_state;    // Current state of the force field
+float ff_charge;            // Current charge level (0.0 to 1.0)
+float ff_timer;            // Timer for active duration or cooldown
+
+//----------------------------------------------------------------------------------
+// Public Function Implementations (see forcefield.h for documentation)
+//----------------------------------------------------------------------------------
 
 void InitForceField(void)
 {
@@ -13,6 +35,12 @@ void InitForceField(void)
     ff_timer = 0.0f;
 }
 
+//----------------------------------------------------------------------------------
+// ActivateForceField - Implementation Notes:
+// - Only activates if force field is in ready state
+// - Plays different sounds for success/failure
+// - Sets timer for active duration
+//----------------------------------------------------------------------------------
 void ActivateForceField(Sound forceFieldSound, Sound forceFailSound)
 {
     if (ff_state == FF_STATE_READY)
@@ -25,6 +53,13 @@ void ActivateForceField(Sound forceFieldSound, Sound forceFailSound)
     }
 }
 
+//----------------------------------------------------------------------------------
+// UpdateForceField - Implementation Notes:
+// - Handles state transitions and timers
+// - Detects and repels enemies within radius when active
+// - Manages cooldown and charge regeneration
+// - Plays hit sound when enemies are repelled
+//----------------------------------------------------------------------------------
 void UpdateForceField(Sound forceFieldHitSound)
 {
     if (ff_state == FF_STATE_ACTIVE)
@@ -64,6 +99,12 @@ void UpdateForceField(Sound forceFieldHitSound)
     }
 }
 
+//----------------------------------------------------------------------------------
+// DrawForceField2D - Implementation Notes:
+// - Creates grid overlay effect when field is active
+// - Divides screen into 4x2 grid of cells
+// - Uses LIME color for visual consistency
+//----------------------------------------------------------------------------------
 void DrawForceField2D(void)
 {
     if (ff_state == FF_STATE_ACTIVE)
@@ -83,6 +124,12 @@ void DrawForceField2D(void)
     }
 }
 
+//----------------------------------------------------------------------------------
+// DrawForceFieldUI - Implementation Notes:
+// - Shows charge status in text form
+// - Uses color coding (GREEN for full, YELLOW for charging)
+// - Displays percentage when not fully charged
+//----------------------------------------------------------------------------------
 void DrawForceFieldUI(void)
 {
     if (ff_state == FF_STATE_READY)

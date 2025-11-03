@@ -1,15 +1,49 @@
+/*******************************************************************************************
+*
+*   enemy.c - Enemy implementation
+*
+*   See enemy.h for module interface documentation.
+*
+*******************************************************************************************/
+
 #include "enemy.h"
 #include "config.h"
 #include "raymath.h"
 #include "rlgl.h"
 
+//----------------------------------------------------------------------------------
+// Module Variables
+//----------------------------------------------------------------------------------
+
 Enemy enemies[MAX_ENEMIES];
 
-static void DrawEnemyShip(Enemy enemy);
-static Vector3 GetCubicBezierTangent(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t);
-void SpawnWave(int wave);
+//----------------------------------------------------------------------------------
+// Internal Function Declarations
+//----------------------------------------------------------------------------------
 
-// Function to calculate a point on a cubic Bezier curve
+/**
+ * Render a single enemy ship using line-based 3D geometry
+ * 
+ * @param enemy The enemy to render, must be active
+ */
+static void DrawEnemyShip(Enemy enemy);
+
+/**
+ * Calculate the normalized tangent vector at point t along a cubic Bezier curve
+ * 
+ * @param p0,p1,p2,p3 Control points defining the curve
+ * @param t Parameter value along curve [0,1]
+ * @return Normalized tangent vector (or forward vector if tangent is zero)
+ */
+static Vector3 GetCubicBezierTangent(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t);
+
+/**
+ * Calculate a point on a cubic Bezier curve using De Casteljau's algorithm
+ * 
+ * @param p0,p1,p2,p3 Control points defining the curve
+ * @param t Parameter value along curve [0,1]
+ * @return Position vector of point on curve
+ */
 static Vector3 GetCubicBezierPoint(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
 {
     Vector3 result;
@@ -43,6 +77,16 @@ static Vector3 GetCubicBezierTangent(Vector3 p0, Vector3 p1, Vector3 p2, Vector3
     return Vector3Scale(result, 1.0f / len);
 }
 
+//----------------------------------------------------------------------------------
+// Public Function Implementations (see enemy.h for documentation)
+//----------------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------------
+// InitEnemies - Implementation Notes:
+// - Sets all enemies to inactive
+// - Initializes default properties (radius, color)
+// - Sets up transform (axis, angle) for rotation effects
+//----------------------------------------------------------------------------------
 void InitEnemies(void)
 {
     for (int i = 0; i < MAX_ENEMIES; i++)
@@ -56,6 +100,13 @@ void InitEnemies(void)
     }
 }
 
+//----------------------------------------------------------------------------------
+// SpawnWave - Implementation Notes:
+// - Finds inactive enemies to reuse
+// - Assigns random but controlled Bezier curve paths
+// - Alternates enemies between left/right approach paths
+// - Staggers enemy positions with z-offset
+//----------------------------------------------------------------------------------
 void SpawnWave(int wave)
 {
     int waveSize = WAVE_SIZE;
@@ -91,6 +142,14 @@ void SpawnWave(int wave)
     }
 }
 
+//----------------------------------------------------------------------------------
+// UpdateEnemies - Implementation Notes:
+// - Handles enemy state transitions (normal/repelled)
+// - Moves enemies along Bezier paths or linear repel paths
+// - Increases speed with wave number
+// - Spawns new wave when all enemies inactive
+// - Updates lives when enemies pass player
+//----------------------------------------------------------------------------------
 void UpdateEnemies(int* lives, int* wave)
 {
     int activeEnemies = 0;
@@ -138,6 +197,13 @@ void UpdateEnemies(int* lives, int* wave)
     }
 }
 
+//----------------------------------------------------------------------------------
+// DrawEnemies - Implementation Notes:
+// - Renders only active enemies
+// - Uses line-based 3D geometry for wireframe look
+// - Handles orientation based on movement direction
+// - Adds rotation effect during repel state
+//----------------------------------------------------------------------------------
 void DrawEnemies(void)
 {
     for (int i = 0; i < MAX_ENEMIES; i++)
@@ -149,10 +215,14 @@ void DrawEnemies(void)
     }
 }
 
+//----------------------------------------------------------------------------------
+// Internal Function Implementations
+//----------------------------------------------------------------------------------
+
 static void DrawEnemyShip(Enemy enemy)
 {
     float r = enemy.radius;
-    float fin_r = 1.0f; // Fin size
+    float fin_r = 1.0f; // Fin size relative to body radius
 
     Vector3 forward = GetCubicBezierTangent(enemy.p0, enemy.p1, enemy.p2, enemy.p3, enemy.t);
     if (enemy.state == ENEMY_STATE_REPELLED) forward = Vector3Normalize(Vector3Subtract(enemy.p0, enemy.position));
