@@ -31,5 +31,6 @@ extern Enemy enemies[MAX_ENEMIES];
 void InitEnemies(void);
 void UpdateEnemies(int* lives, int* wave);
 void DrawEnemies(void);
+void SpawnWave(int wave);
 
 #endif // ENEMY_H

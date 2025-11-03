@@ -121,6 +121,9 @@ int main(void)
 
     UnloadSound(shootSound);
     UnloadSound(explosionSound);
+    UnloadSound(forceFieldSound);
+    UnloadSound(forceFailSound);
+    UnloadSound(forceFieldHitSound);
     CloseAudioDevice();
 
     CloseWindow();
@@ -135,6 +138,8 @@ void InitGame(int* score, int* lives, int* wave)
     *wave = 1;
     InitLasers();
     InitEnemies();
+    // Spawn the initial set of enemies for the first wave
+    SpawnWave(*wave);
     InitStarfield();
     InitForceField();
 }

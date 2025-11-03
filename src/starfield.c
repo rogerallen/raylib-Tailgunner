@@ -13,10 +13,12 @@ void InitStarfield(void)
 
 void UpdateStarfield(void)
 {
-    float speed = 1.0f; // Increased speed
+    // Make movement frame-rate independent
+    const float speed = 60.0f; // units per second
+    float dt = GetFrameTime();
     for (int i = 0; i < MAX_STARS; i++)
     {
-        stars[i].position.z -= speed; // Move towards negative Z (away from player)
+        stars[i].position.z -= speed * dt; // Move towards negative Z (away from player)
 
         if (stars[i].position.z < -200.0f) // Reset when it passes behind the player
         {

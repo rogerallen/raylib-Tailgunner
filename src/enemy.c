@@ -4,12 +4,12 @@
 
 Enemy enemies[MAX_ENEMIES];
 
-void DrawEnemyShip(Enemy enemy);
-Vector3 GetCubicBezierTangent(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t);
+static void DrawEnemyShip(Enemy enemy);
+static Vector3 GetCubicBezierTangent(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t);
 void SpawnWave(int wave);
 
 // Function to calculate a point on a cubic Bezier curve
-Vector3 GetCubicBezierPoint(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
+static Vector3 GetCubicBezierPoint(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
 {
     Vector3 result;
     float u = 1.0f - t;
@@ -25,7 +25,7 @@ Vector3 GetCubicBezierPoint(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, floa
     return result;
 }
 
-Vector3 GetCubicBezierTangent(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
+static Vector3 GetCubicBezierTangent(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
 {
     Vector3 result;
     float u = 1.0f - t;
@@ -36,7 +36,10 @@ Vector3 GetCubicBezierTangent(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, fl
     result.y = 3 * uu * (p1.y - p0.y) + 6 * u * t * (p2.y - p1.y) + 3 * tt * (p3.y - p2.y);
     result.z = 3 * uu * (p1.z - p0.z) + 6 * u * t * (p2.z - p1.z) + 3 * tt * (p3.z - p2.z);
 
-    return Vector3Normalize(result);
+    // Avoid normalizing a near-zero vector which can produce NaNs
+    float len = Vector3Length(result);
+    if (len < 1e-6f) return (Vector3){ 0.0f, 0.0f, 1.0f };
+    return Vector3Scale(result, 1.0f / len);
 }
 
 void InitEnemies(void)
@@ -145,7 +148,7 @@ void DrawEnemies(void)
     }
 }
 
-void DrawEnemyShip(Enemy enemy)
+static void DrawEnemyShip(Enemy enemy)
 {
     float r = enemy.radius;
     float fin_r = 1.0f; // Fin size
