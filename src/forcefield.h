@@ -12,6 +12,8 @@
 
 #include "raylib.h"
 #include "config.h"
+// Need EnemyManager definition to operate on enemies
+#include "enemy.h"
 
 // Force field state machine states
 typedef enum {
@@ -20,9 +22,12 @@ typedef enum {
     FF_STATE_COOLDOWN   // Recharging after use
 } ForceFieldState;
 
-// Global force field state (consider making this an opaque struct in future)
-extern ForceFieldState ff_state;
-extern float ff_charge;  // Current charge level (0.0f to 1.0f)
+// Encapsulated manager to avoid globals
+typedef struct ForceFieldManager {
+    ForceFieldState state;
+    float charge;  // Current charge level (0.0f to 1.0f)
+    float timer;   // Active or cooldown timer
+} ForceFieldManager;
 
 //----------------------------------------------------------------------------------
 // Force Field Module Functions
@@ -31,14 +36,15 @@ extern float ff_charge;  // Current charge level (0.0f to 1.0f)
 /**
  * Initialize the force field system
  */
-void InitForceField(void);
+void InitForceField(ForceFieldManager* mgr);
 
 /**
  * Update force field state and handle enemy repulsion
  *
  * @param forceFieldHitSound Sound to play when enemies are repelled
  */
-void UpdateForceField(Sound forceFieldHitSound);
+// Update will need access to enemies in order to apply repulsion
+void UpdateForceField(ForceFieldManager* mgr, struct EnemyManager* emgr, Sound forceFieldHitSound);
 
 /**
  * Attempt to activate the force field
@@ -46,16 +52,16 @@ void UpdateForceField(Sound forceFieldHitSound);
  * @param forceFieldSound Sound to play on successful activation
  * @param forceFailSound Sound to play if activation fails (cooling down)
  */
-void ActivateForceField(Sound forceFieldSound, Sound forceFailSound);
+void ActivateForceField(ForceFieldManager* mgr, Sound forceFieldSound, Sound forceFailSound);
 
 /**
  * Draw the 2D force field grid effect when active
  */
-void DrawForceField2D(void);
+void DrawForceField2D(ForceFieldManager* mgr);
 
 /**
  * Draw the force field UI showing charge status
  */
-void DrawForceFieldUI(void);
+void DrawForceFieldUI(ForceFieldManager* mgr);
 
 #endif // FORCEFIELD_H

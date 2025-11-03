@@ -16,98 +16,77 @@
 #include "enemy.h"
 #include "rlgl.h"
 
-//----------------------------------------------------------------------------------
-// Module Variables
-//----------------------------------------------------------------------------------
-
-ForceFieldState ff_state;    // Current state of the force field
-float ff_charge;            // Current charge level (0.0 to 1.0)
-float ff_timer;            // Timer for active duration or cooldown
+// No module-level globals: state is stored in ForceFieldManager instances
 
 //----------------------------------------------------------------------------------
-// Public Function Implementations (see forcefield.h for documentation)
+//----------------------------------------------------------------------------------
+// Module: ForceFieldManager-based implementation (no globals)
 //----------------------------------------------------------------------------------
 
-void InitForceField(void)
+void InitForceField(ForceFieldManager* mgr)
 {
-    ff_state = FF_STATE_READY;
-    ff_charge = 1.0f;
-    ff_timer = 0.0f;
+    mgr->state = FF_STATE_READY;
+    mgr->charge = 1.0f;
+    mgr->timer = 0.0f;
 }
 
-//----------------------------------------------------------------------------------
-// ActivateForceField - Implementation Notes:
-// - Only activates if force field is in ready state
-// - Plays different sounds for success/failure
-// - Sets timer for active duration
-//----------------------------------------------------------------------------------
-void ActivateForceField(Sound forceFieldSound, Sound forceFailSound)
+void ActivateForceField(ForceFieldManager* mgr, Sound forceFieldSound, Sound forceFailSound)
 {
-    if (ff_state == FF_STATE_READY)
+    if (mgr->state == FF_STATE_READY)
     {
-        ff_state = FF_STATE_ACTIVE;
-        ff_timer = FORCE_FIELD_ACTIVE_TIME;
+        mgr->state = FF_STATE_ACTIVE;
+        mgr->timer = FORCE_FIELD_ACTIVE_TIME;
         PlaySound(forceFieldSound);
-    } else {
+    }
+    else
+    {
         PlaySound(forceFailSound);
     }
 }
 
-//----------------------------------------------------------------------------------
-// UpdateForceField - Implementation Notes:
-// - Handles state transitions and timers
-// - Detects and repels enemies within radius when active
-// - Manages cooldown and charge regeneration
-// - Plays hit sound when enemies are repelled
-//----------------------------------------------------------------------------------
-void UpdateForceField(Sound forceFieldHitSound)
+void UpdateForceField(ForceFieldManager* mgr, struct EnemyManager* emgr, Sound forceFieldHitSound)
 {
-    if (ff_state == FF_STATE_ACTIVE)
+    if (mgr->state == FF_STATE_ACTIVE)
     {
-        ff_timer -= GetFrameTime();
-        if (ff_timer <= 0.0f)
+        mgr->timer -= GetFrameTime();
+        if (mgr->timer <= 0.0f)
         {
-            ff_state = FF_STATE_COOLDOWN;
-            ff_timer = FORCE_FIELD_TIMEOUT;
-            ff_charge = 0.0f;
+            mgr->state = FF_STATE_COOLDOWN;
+            mgr->timer = FORCE_FIELD_TIMEOUT;
+            mgr->charge = 0.0f;
         }
 
         // Push back enemies
         bool hit = false;
         for (int i = 0; i < MAX_ENEMIES; i++)
         {
-            if (enemies[i].active && enemies[i].position.z < 0 && -enemies[i].position.z < FORCE_FIELD_RADIUS)
+            Enemy* e = &emgr->enemies[i];
+            if (e->active && e->position.z < 0 && -e->position.z < FORCE_FIELD_RADIUS)
             {
-                enemies[i].state = ENEMY_STATE_REPELLED;
+                e->state = ENEMY_STATE_REPELLED;
                 hit = true;
-                enemies[i].repel_start_pos = enemies[i].position;
-                enemies[i].repel_t = 0.0f;
+                e->repel_start_pos = e->position;
+                e->repel_t = 0.0f;
             }
         }
 
         if (hit) PlaySound(forceFieldHitSound);
     }
-    else if (ff_state == FF_STATE_COOLDOWN)
+    else if (mgr->state == FF_STATE_COOLDOWN)
     {
-        ff_timer -= GetFrameTime();
-        ff_charge = 1.0f - (ff_timer / FORCE_FIELD_TIMEOUT);
-        if (ff_timer <= 0.0f)
+        mgr->timer -= GetFrameTime();
+        mgr->charge = 1.0f - (mgr->timer / FORCE_FIELD_TIMEOUT);
+        if (mgr->timer <= 0.0f)
         {
-            ff_state = FF_STATE_READY;
-            ff_charge = 1.0f;
+            mgr->state = FF_STATE_READY;
+            mgr->charge = 1.0f;
         }
     }
 }
 
-//----------------------------------------------------------------------------------
-// DrawForceField2D - Implementation Notes:
-// - Creates grid overlay effect when field is active
-// - Divides screen into 4x2 grid of cells
-// - Uses LIME color for visual consistency
-//----------------------------------------------------------------------------------
-void DrawForceField2D(void)
+void DrawForceField2D(ForceFieldManager* mgr)
 {
-    if (ff_state == FF_STATE_ACTIVE)
+    if (mgr->state == FF_STATE_ACTIVE)
     {
         int screenWidth = GetScreenWidth();
         int screenHeight = GetScreenHeight();
@@ -124,20 +103,16 @@ void DrawForceField2D(void)
     }
 }
 
-//----------------------------------------------------------------------------------
-// DrawForceFieldUI - Implementation Notes:
-// - Shows charge status in text form
-// - Uses color coding (GREEN for full, YELLOW for charging)
-// - Displays percentage when not fully charged
-//----------------------------------------------------------------------------------
-void DrawForceFieldUI(void)
+void DrawForceFieldUI(ForceFieldManager* mgr)
 {
-    if (ff_state == FF_STATE_READY)
+    if (mgr->state == FF_STATE_READY)
     {
         DrawText("Charge: FULL", 10, 40, 20, GREEN);
     }
     else
     {
-        DrawText(TextFormat("Charge: %i%%", (int)(ff_charge * 100)), 10, 40, 20, YELLOW);
+        DrawText(TextFormat("Charge: %i%%", (int)(mgr->charge * 100)), 10, 40, 20, YELLOW);
     }
 }
+// - Displays percentage when not fully charged
+// (All UI/draw/update functions now receive a ForceFieldManager* and no globals remain.)

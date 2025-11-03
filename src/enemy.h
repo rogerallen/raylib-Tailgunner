@@ -36,8 +36,11 @@ typedef struct Enemy {
     float rotationAngle;    // Current spin angle (degrees)
 } Enemy;
 
-// Global enemy array (consider making this an opaque pointer in future)
-extern Enemy enemies[MAX_ENEMIES];
+// Opaque manager to avoid globals. Keep the array inside this struct so callers
+// can allocate or pass around manager instances instead of using a global.
+typedef struct EnemyManager {
+    Enemy enemies[MAX_ENEMIES];
+} EnemyManager;
 
 //----------------------------------------------------------------------------------
 // Enemy Module Functions
@@ -46,7 +49,8 @@ extern Enemy enemies[MAX_ENEMIES];
 /**
  * Initialize the enemy system, resetting all enemies to inactive state
  */
-void InitEnemies(void);
+// Initialize the enemy manager (resets all enemies)
+void InitEnemies(EnemyManager* mgr);
 
 /**
  * Update all active enemies, handling movement and state changes
@@ -54,18 +58,23 @@ void InitEnemies(void);
  * @param lives Pointer to player's life count, decremented when enemies escape
  * @param wave Pointer to current wave number, incremented when wave is cleared
  */
-void UpdateEnemies(int* lives, int* wave);
+// Update all active enemies, handling movement and state changes
+// @param mgr Enemy manager instance
+void UpdateEnemies(EnemyManager* mgr, int* lives, int* wave);
 
 /**
  * Render all active enemies in 3D space
  */
-void DrawEnemies(void);
+// Render all active enemies in 3D space
+void DrawEnemies(EnemyManager* mgr);
 
 /**
  * Spawn a new wave of enemies with curved attack paths
  *
  * @param wave Current wave number (affects enemy movement speed)
  */
-void SpawnWave(int wave);
+// Spawn a new wave of enemies with curved attack paths
+// @param mgr Enemy manager instance
+void SpawnWave(EnemyManager* mgr, int wave);
 
 #endif // ENEMY_H

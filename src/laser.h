@@ -12,6 +12,7 @@
 
 #include "raylib.h"
 #include "config.h"
+#include "enemy.h"
 
 // Laser beam definition
 typedef struct Laser {
@@ -22,8 +23,10 @@ typedef struct Laser {
     Color color;      // Beam color
 } Laser;
 
-// Global laser array (consider making this an opaque pointer in future)
-extern Laser lasers[MAX_LASERS];
+// Encapsulate lasers in a manager to avoid globals
+typedef struct LaserManager {
+    Laser lasers[MAX_LASERS];
+} LaserManager;
 
 //----------------------------------------------------------------------------------
 // Laser Module Functions
@@ -32,7 +35,8 @@ extern Laser lasers[MAX_LASERS];
 /**
  * Initialize the laser system, setting all lasers to inactive
  */
-void InitLasers(void);
+// Initialize lasers within provided manager
+void InitLasers(LaserManager* mgr);
 
 /**
  * Fire lasers from camera along the given ray, checking for enemy hits
@@ -42,16 +46,17 @@ void InitLasers(void);
  * @param explosionSound Sound to play on successful hit
  * @return Number of enemies hit by this shot
  */
-int FireLasers(Ray ray, Camera camera, Sound explosionSound);
+// Fire lasers using given manager and optionally inspect enemies via EnemyManager
+int FireLasers(LaserManager* lmgr, struct EnemyManager* emgr, Ray ray, Camera camera, Sound explosionSound);
 
 /**
  * Update all active lasers, handling lifetime and deactivation
  */
-void UpdateLasers(void);
+void UpdateLasers(LaserManager* mgr);
 
 /**
  * Render all active laser beams in 3D space
  */
-void DrawLasers(void);
+void DrawLasers(LaserManager* mgr);
 
 #endif // LASER_H

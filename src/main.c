@@ -17,7 +17,7 @@
 // - Delegates gameplay logic to subsystem modules
 //----------------------------------------------------------------------------------
 
-void InitGame(int* score, int* lives, int* wave);
+void InitGame(int* score, int* lives, int* wave, struct LaserManager* lmgr, struct EnemyManager* emgr, struct ForceFieldManager* ffmgr);
 
 //----------------------------------------------------------------------------------
 // main - Implementation Notes:
@@ -45,6 +45,11 @@ int main(void)
     int lives = 0;
     int wave = 0;
 
+    // Encapsulated managers (avoid globals)
+    LaserManager laserMgr = { 0 };
+    EnemyManager enemyMgr = { 0 };
+    ForceFieldManager ffMgr = { 0 };
+
     InitAudioDevice();
 
     Sound shootSound = LoadSound("resources/shoot.wav");
@@ -61,7 +66,7 @@ int main(void)
             {
                 if (IsKeyPressed(KEY_ENTER) || IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
                 {
-                    InitGame(&score, &lives, &wave);
+                    InitGame(&score, &lives, &wave, &laserMgr, &enemyMgr, &ffMgr);
                     gameState = STATE_PLAYING;
                     HideCursor();
                 }
@@ -71,19 +76,19 @@ int main(void)
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
                 {
                     Ray ray = GetMouseRay(GetMousePosition(), camera);
-                    score += FireLasers(ray, camera, explosionSound);
+                    score += FireLasers(&laserMgr, &enemyMgr, ray, camera, explosionSound);
                     PlaySound(shootSound);
                 }
 
                 if (IsKeyPressed(KEY_SPACE))
                 {
-                    ActivateForceField(forceFieldSound, forceFailSound);
+                    ActivateForceField(&ffMgr, forceFieldSound, forceFailSound);
                 }
 
-                UpdateLasers();
+                UpdateLasers(&laserMgr);
                 UpdateStarfield();
-                UpdateEnemies(&lives, &wave);
-                UpdateForceField(forceFieldHitSound);
+                UpdateEnemies(&enemyMgr, &lives, &wave);
+                UpdateForceField(&ffMgr, &enemyMgr, forceFieldHitSound);
 
                 if (lives <= 0)
                 {
@@ -113,10 +118,10 @@ int main(void)
         {
             BeginMode3D(camera);
             DrawStarfield();
-            DrawEnemies();
-            DrawLasers();
+            DrawEnemies(&enemyMgr);
+            DrawLasers(&laserMgr);
             EndMode3D();
-            DrawForceField2D();
+            DrawForceField2D(&ffMgr);
 
             DrawCircleLines(GetMouseX(), GetMouseY(), 10, MAROON);
             DrawLine(GetMouseX() - 20, GetMouseY(), GetMouseX() + 20, GetMouseY(), RED);
@@ -125,7 +130,7 @@ int main(void)
             DrawText(TextFormat("Score: %i", score), 10, 10, 20, GREEN);
             DrawText(TextFormat("Lives: %i", lives), GetScreenWidth() - 100, 10, 20, RED);
             DrawText(TextFormat("Wave: %i", wave), GetScreenWidth() / 2 - 20, 10, 20, YELLOW);
-            DrawForceFieldUI();
+            DrawForceFieldUI(&ffMgr);
         }
         else if (gameState == STATE_GAME_OVER)
         {
@@ -155,15 +160,15 @@ int main(void)
 // - Initializes all subsystems used by the gameplay loop
 // - Spawns initial enemy wave
 //----------------------------------------------------------------------------------
-void InitGame(int* score, int* lives, int* wave)
+void InitGame(int* score, int* lives, int* wave, struct LaserManager* lmgr, struct EnemyManager* emgr, struct ForceFieldManager* ffmgr)
 {
     *score = 0;
     *lives = 3;
     *wave = 1;
-    InitLasers();
-    InitEnemies();
+    InitLasers(lmgr);
+    InitEnemies(emgr);
     // Spawn the initial set of enemies for the first wave
-    SpawnWave(*wave);
+    SpawnWave(emgr, *wave);
     InitStarfield();
-    InitForceField();
+    InitForceField(ffmgr);
 }

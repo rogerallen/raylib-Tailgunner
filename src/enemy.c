@@ -11,11 +11,7 @@
 #include "raymath.h"
 #include "rlgl.h"
 
-//----------------------------------------------------------------------------------
-// Module Variables
-//----------------------------------------------------------------------------------
-
-Enemy enemies[MAX_ENEMIES];
+// No module-level globals: all enemy state lives inside EnemyManager passed by callers
 
 //----------------------------------------------------------------------------------
 // Internal Function Declarations
@@ -26,7 +22,7 @@ Enemy enemies[MAX_ENEMIES];
  * 
  * @param enemy The enemy to render, must be active
  */
-static void DrawEnemyShip(Enemy enemy);
+static void DrawEnemyShip(const Enemy* enemy);
 
 /**
  * Calculate the normalized tangent vector at point t along a cubic Bezier curve
@@ -87,16 +83,16 @@ static Vector3 GetCubicBezierTangent(Vector3 p0, Vector3 p1, Vector3 p2, Vector3
 // - Initializes default properties (radius, color)
 // - Sets up transform (axis, angle) for rotation effects
 //----------------------------------------------------------------------------------
-void InitEnemies(void)
+void InitEnemies(EnemyManager* mgr)
 {
     for (int i = 0; i < MAX_ENEMIES; i++)
     {
-        enemies[i].active = false;
-        enemies[i].radius = ENEMY_DEFAULT_RADIUS;
-        enemies[i].color = BLUE;
-        enemies[i].state = ENEMY_STATE_NORMAL;
-        enemies[i].rotationAxis = (Vector3){ 0.0f, 1.0f, 0.0f };
-        enemies[i].rotationAngle = 0.0f;
+        mgr->enemies[i].active = false;
+        mgr->enemies[i].radius = ENEMY_DEFAULT_RADIUS;
+        mgr->enemies[i].color = BLUE;
+        mgr->enemies[i].state = ENEMY_STATE_NORMAL;
+        mgr->enemies[i].rotationAxis = (Vector3){ 0.0f, 1.0f, 0.0f };
+        mgr->enemies[i].rotationAngle = 0.0f;
     }
 }
 
@@ -107,7 +103,7 @@ void InitEnemies(void)
 // - Alternates enemies between left/right approach paths
 // - Staggers enemy positions with z-offset
 //----------------------------------------------------------------------------------
-void SpawnWave(int wave)
+void SpawnWave(EnemyManager* mgr, int wave)
 {
     int waveSize = WAVE_SIZE;
     int enemyIndex[waveSize];
@@ -116,7 +112,7 @@ void SpawnWave(int wave)
     // Find enough inactive enemies for a wave
     for (int i = 0; i < MAX_ENEMIES && found < waveSize; i++)
     {
-        if (!enemies[i].active)
+        if (!mgr->enemies[i].active)
         {
             enemyIndex[found] = i;
             found++;
@@ -127,17 +123,18 @@ void SpawnWave(int wave)
     {
         for (int i = 0; i < waveSize; i++)
         {
-            enemies[enemyIndex[i]].active = true;
-            enemies[enemyIndex[i]].state = ENEMY_STATE_NORMAL;
-            enemies[enemyIndex[i]].t = 0.0f;
+            Enemy* e = &mgr->enemies[enemyIndex[i]];
+            e->active = true;
+            e->state = ENEMY_STATE_NORMAL;
+            e->t = 0.0f;
 
             float zOffset = i * -10.0f;
             int side = (i % 2 == 0) ? 1 : -1;
 
-            enemies[enemyIndex[i]].p0 = (Vector3){ (float)GetRandomValue(-20, 20), (float)GetRandomValue(-20, 20), -100.0f + zOffset };
-            enemies[enemyIndex[i]].p1 = (Vector3){ (float)GetRandomValue(-5, 5), (float)GetRandomValue(-5, 5), -50.0f + zOffset };
-            enemies[enemyIndex[i]].p2 = (Vector3){ (float)GetRandomValue(-40, -20) * side, (float)GetRandomValue(10, 20), -25.0f };
-            enemies[enemyIndex[i]].p3 = (Vector3){ (float)GetRandomValue(20, 40) * side, (float)GetRandomValue(-20, -10), 10.0f };
+            e->p0 = (Vector3){ (float)GetRandomValue(-20, 20), (float)GetRandomValue(-20, 20), -100.0f + zOffset };
+            e->p1 = (Vector3){ (float)GetRandomValue(-5, 5), (float)GetRandomValue(-5, 5), -50.0f + zOffset };
+            e->p2 = (Vector3){ (float)GetRandomValue(-40, -20) * side, (float)GetRandomValue(10, 20), -25.0f };
+            e->p3 = (Vector3){ (float)GetRandomValue(20, 40) * side, (float)GetRandomValue(-20, -10), 10.0f };
         }
     }
 }
@@ -150,40 +147,41 @@ void SpawnWave(int wave)
 // - Spawns new wave when all enemies inactive
 // - Updates lives when enemies pass player
 //----------------------------------------------------------------------------------
-void UpdateEnemies(int* lives, int* wave)
+void UpdateEnemies(EnemyManager* mgr, int* lives, int* wave)
 {
     int activeEnemies = 0;
 
     for (int i = 0; i < MAX_ENEMIES; i++)
     {
-        if (enemies[i].active)
+        Enemy* e = &mgr->enemies[i];
+        if (e->active)
         {
             activeEnemies++;
 
-            switch (enemies[i].state)
+            switch (e->state)
             {
                 case ENEMY_STATE_NORMAL:
                 {
-                    enemies[i].t += ENEMY_DT_DFRAME + (*wave * ENEMY_WAVE_DT_DFRAME);
-                    enemies[i].position = GetCubicBezierPoint(enemies[i].p0, enemies[i].p1, enemies[i].p2, enemies[i].p3, enemies[i].t);
+                    e->t += ENEMY_DT_DFRAME + (*wave * ENEMY_WAVE_DT_DFRAME);
+                    e->position = GetCubicBezierPoint(e->p0, e->p1, e->p2, e->p3, e->t);
 
-                    if (enemies[i].t >= 1.0f)
+                    if (e->t >= 1.0f)
                     {
-                        enemies[i].active = false;
+                        e->active = false;
                         (*lives)--;
                     }
                 } break;
                 case ENEMY_STATE_REPELLED:
                 {
-                    enemies[i].repel_t += ENEMY_REPEL_DT_DFRAME;
-                    enemies[i].position = Vector3Lerp(enemies[i].repel_start_pos, enemies[i].p0, enemies[i].repel_t);
-                    enemies[i].rotationAngle += 360.0f * GetFrameTime();
+                    e->repel_t += ENEMY_REPEL_DT_DFRAME;
+                    e->position = Vector3Lerp(e->repel_start_pos, e->p0, e->repel_t);
+                    e->rotationAngle += 360.0f * GetFrameTime();
 
-                    if (enemies[i].repel_t >= 1.0f)
+                    if (e->repel_t >= 1.0f)
                     {
-                        enemies[i].state = ENEMY_STATE_NORMAL;
-                        enemies[i].t = 0.0f;
-                        enemies[i].rotationAngle = 0.0f;
+                        e->state = ENEMY_STATE_NORMAL;
+                        e->t = 0.0f;
+                        e->rotationAngle = 0.0f;
                     }
                 } break;
             }
@@ -193,7 +191,7 @@ void UpdateEnemies(int* lives, int* wave)
     if (activeEnemies == 0)
     {
         (*wave)++;
-        SpawnWave(*wave);
+        SpawnWave(mgr, *wave);
     }
 }
 
@@ -204,13 +202,13 @@ void UpdateEnemies(int* lives, int* wave)
 // - Handles orientation based on movement direction
 // - Adds rotation effect during repel state
 //----------------------------------------------------------------------------------
-void DrawEnemies(void)
+void DrawEnemies(EnemyManager* mgr)
 {
     for (int i = 0; i < MAX_ENEMIES; i++)
     {
-        if (enemies[i].active)
+        if (mgr->enemies[i].active)
         {
-            DrawEnemyShip(enemies[i]);
+            DrawEnemyShip(&mgr->enemies[i]);
         }
     }
 }
@@ -219,28 +217,27 @@ void DrawEnemies(void)
 // Internal Function Implementations
 //----------------------------------------------------------------------------------
 
-static void DrawEnemyShip(Enemy enemy)
+static void DrawEnemyShip(const Enemy* enemy)
 {
-    float r = enemy.radius;
+    float r = enemy->radius;
     float fin_r = 1.0f; // Fin size relative to body radius
-
-    Vector3 forward = GetCubicBezierTangent(enemy.p0, enemy.p1, enemy.p2, enemy.p3, enemy.t);
-    if (enemy.state == ENEMY_STATE_REPELLED) forward = Vector3Normalize(Vector3Subtract(enemy.p0, enemy.position));
+    Vector3 forward = GetCubicBezierTangent(enemy->p0, enemy->p1, enemy->p2, enemy->p3, enemy->t);
+    if (enemy->state == ENEMY_STATE_REPELLED) forward = Vector3Normalize(Vector3Subtract(enemy->p0, enemy->position));
 
     Vector3 up = { 0.0f, 1.0f, 0.0f };
     Vector3 right = Vector3CrossProduct(forward, up);
     up = Vector3CrossProduct(right, forward);
 
     Matrix transform = {
-        right.x, up.x, forward.x, enemy.position.x,
-        right.y, up.y, forward.y, enemy.position.y,
-        right.z, up.z, forward.z, enemy.position.z,
+        right.x, up.x, forward.x, enemy->position.x,
+        right.y, up.y, forward.y, enemy->position.y,
+        right.z, up.z, forward.z, enemy->position.z,
         0, 0, 0, 1
     };
 
     rlPushMatrix();
     rlMultMatrixf(MatrixToFloat(transform));
-    rlRotatef(enemy.rotationAngle, enemy.rotationAxis.x, enemy.rotationAxis.y, enemy.rotationAxis.z);
+    rlRotatef(enemy->rotationAngle, enemy->rotationAxis.x, enemy->rotationAxis.y, enemy->rotationAxis.z);
 
     Vector3 v_top = { 0, r, 0 };
     Vector3 v_bottom = { 0, -r, 0 };
@@ -250,20 +247,20 @@ static void DrawEnemyShip(Enemy enemy)
     Vector3 v_back = { 0, 0, -r * 2 }; // 2x longer
 
     // Main body
-    DrawLine3D(v_front, v_top, enemy.color);
-    DrawLine3D(v_front, v_bottom, enemy.color);
-    DrawLine3D(v_front, v_left, enemy.color);
-    DrawLine3D(v_front, v_right, enemy.color);
+    DrawLine3D(v_front, v_top, enemy->color);
+    DrawLine3D(v_front, v_bottom, enemy->color);
+    DrawLine3D(v_front, v_left, enemy->color);
+    DrawLine3D(v_front, v_right, enemy->color);
 
-    DrawLine3D(v_back, v_top, enemy.color);
-    DrawLine3D(v_back, v_bottom, enemy.color);
-    DrawLine3D(v_back, v_left, enemy.color);
-    DrawLine3D(v_back, v_right, enemy.color);
+    DrawLine3D(v_back, v_top, enemy->color);
+    DrawLine3D(v_back, v_bottom, enemy->color);
+    DrawLine3D(v_back, v_left, enemy->color);
+    DrawLine3D(v_back, v_right, enemy->color);
 
-    DrawLine3D(v_top, v_right, enemy.color);
-    DrawLine3D(v_right, v_bottom, enemy.color);
-    DrawLine3D(v_bottom, v_left, enemy.color);
-    DrawLine3D(v_left, v_top, enemy.color);
+    DrawLine3D(v_top, v_right, enemy->color);
+    DrawLine3D(v_right, v_bottom, enemy->color);
+    DrawLine3D(v_bottom, v_left, enemy->color);
+    DrawLine3D(v_left, v_top, enemy->color);
 
     // Fins
     Vector3 fin_top_back = { 0, fin_r, -r * 2 - fin_r };
@@ -271,17 +268,17 @@ static void DrawEnemyShip(Enemy enemy)
     Vector3 fin_left_back = { -fin_r, 0, -r * 2 - fin_r };
     Vector3 fin_right_back = { fin_r, 0, -r * 2 - fin_r };
 
-    DrawLine3D(v_top, fin_top_back, enemy.color);
-    DrawLine3D(v_back, fin_top_back, enemy.color);
+    DrawLine3D(v_top, fin_top_back, enemy->color);
+    DrawLine3D(v_back, fin_top_back, enemy->color);
 
-    DrawLine3D(v_bottom, fin_bottom_back, enemy.color);
-    DrawLine3D(v_back, fin_bottom_back, enemy.color);
+    DrawLine3D(v_bottom, fin_bottom_back, enemy->color);
+    DrawLine3D(v_back, fin_bottom_back, enemy->color);
 
-    DrawLine3D(v_left, fin_left_back, enemy.color);
-    DrawLine3D(v_back, fin_left_back, enemy.color);
+    DrawLine3D(v_left, fin_left_back, enemy->color);
+    DrawLine3D(v_back, fin_left_back, enemy->color);
 
-    DrawLine3D(v_right, fin_right_back, enemy.color);
-    DrawLine3D(v_back, fin_right_back, enemy.color);
+    DrawLine3D(v_right, fin_right_back, enemy->color);
+    DrawLine3D(v_back, fin_right_back, enemy->color);
 
     rlPopMatrix();
 }

@@ -20,19 +20,19 @@
 // Module Variables
 //----------------------------------------------------------------------------------
 
-Laser lasers[MAX_LASERS];
+// No global lasers array. Storage is held in LaserManager provided by caller.
 
 //----------------------------------------------------------------------------------
 // Public Function Implementations (see laser.h for documentation)
 //----------------------------------------------------------------------------------
 
-void InitLasers(void)
+void InitLasers(LaserManager* mgr)
 {
     for (int i = 0; i < MAX_LASERS; i++)
     {
-        lasers[i].active = false;
-        lasers[i].lifeTime = 0.0f;
-        lasers[i].color = RED;
+        mgr->lasers[i].active = false;
+        mgr->lasers[i].lifeTime = 0.0f;
+        mgr->lasers[i].color = RED;
     }
 }
 
@@ -43,7 +43,7 @@ void InitLasers(void)
 // - Only destroys closest enemy hit by ray
 // - Will overwrite oldest beam if all slots are active
 //----------------------------------------------------------------------------------
-int FireLasers(Ray ray, Camera camera, Sound explosionSound)
+int FireLasers(LaserManager* lmgr, struct EnemyManager* emgr, Ray ray, Camera camera, Sound explosionSound)
 {
     int hits = 0;
     // Find closest enemy hit by the ray
@@ -52,9 +52,9 @@ int FireLasers(Ray ray, Camera camera, Sound explosionSound)
 
     for (int i = 0; i < MAX_ENEMIES; i++)
     {
-        if (enemies[i].active)
+        if (emgr->enemies[i].active)
         {
-            RayCollision collision = GetRayCollisionSphere(ray, enemies[i].position, enemies[i].radius * 1.5f);
+            RayCollision collision = GetRayCollisionSphere(ray, emgr->enemies[i].position, emgr->enemies[i].radius * 1.5f);
             if (collision.hit && collision.distance < closestHitDist)
             {
                 closestHitDist = collision.distance;
@@ -72,8 +72,8 @@ int FireLasers(Ray ray, Camera camera, Sound explosionSound)
 
     if (closestEnemyIndex != -1)
     {
-        endPos = enemies[closestEnemyIndex].position;
-        enemies[closestEnemyIndex].active = false;
+        endPos = emgr->enemies[closestEnemyIndex].position;
+        emgr->enemies[closestEnemyIndex].active = false;
         hits++;
         // Play explosion sound here is OK, but caller may prefer to handle audio; keep for now
         PlaySound(explosionSound);
@@ -83,18 +83,18 @@ int FireLasers(Ray ray, Camera camera, Sound explosionSound)
     int placed = 0;
     for (int i = 0; i < MAX_LASERS && placed < MAX_LASERS; i++)
     {
-        if (!lasers[i].active)
+        if (!lmgr->lasers[i].active)
         {
             // Alternate left/right offset per laser slot
             float horiz = (i % 2 == 0) ? -0.5f : 0.5f;
             Vector3 offset = Vector3Add(Vector3Scale(camRight, horiz), Vector3Scale(camUp, -0.5f));
                 Vector3 startPos = Vector3Add(camera.position, Vector3Add(Vector3Scale(camForward, LASER_START_FORWARD_OFFSET), offset));
 
-            lasers[i].active = true;
-                lasers[i].lifeTime = LASER_LIFETIME; // use configurable lifetime
-            lasers[i].start = startPos;
-            lasers[i].end = endPos;
-            lasers[i].color = RED;
+            lmgr->lasers[i].active = true;
+            lmgr->lasers[i].lifeTime = LASER_LIFETIME; // use configurable lifetime
+            lmgr->lasers[i].start = startPos;
+            lmgr->lasers[i].end = endPos;
+            lmgr->lasers[i].color = RED;
             placed++;
         }
     }
@@ -106,11 +106,11 @@ int FireLasers(Ray ray, Camera camera, Sound explosionSound)
         Vector3 offset = Vector3Add(Vector3Scale(camRight, horiz), Vector3Scale(camUp, -0.5f));
             Vector3 startPos = Vector3Add(camera.position, Vector3Add(Vector3Scale(camForward, LASER_START_FORWARD_OFFSET), offset));
 
-        lasers[0].active = true;
-            lasers[0].lifeTime = LASER_LIFETIME;
-        lasers[0].start = startPos;
-        lasers[0].end = endPos;
-        lasers[0].color = RED;
+        lmgr->lasers[0].active = true;
+        lmgr->lasers[0].lifeTime = LASER_LIFETIME;
+        lmgr->lasers[0].start = startPos;
+        lmgr->lasers[0].end = endPos;
+        lmgr->lasers[0].color = RED;
     }
 
     return hits;
@@ -121,16 +121,16 @@ int FireLasers(Ray ray, Camera camera, Sound explosionSound)
 // - Decrements lifetime of active beams using frame time
 // - Deactivates beams when lifetime expires
 //----------------------------------------------------------------------------------
-void UpdateLasers(void)
+void UpdateLasers(LaserManager* mgr)
 {
     for (int i = 0; i < MAX_LASERS; i++)
     {
-        if (lasers[i].active)
+        if (mgr->lasers[i].active)
         { 
-            lasers[i].lifeTime -= GetFrameTime();
-            if (lasers[i].lifeTime <= 0.0f)
+            mgr->lasers[i].lifeTime -= GetFrameTime();
+            if (mgr->lasers[i].lifeTime <= 0.0f)
             {
-                lasers[i].active = false;
+                mgr->lasers[i].active = false;
             }
         }
     }
@@ -141,13 +141,13 @@ void UpdateLasers(void)
 // - Renders active laser beams as 3D lines
 // - Uses beam color property for rendering
 //----------------------------------------------------------------------------------
-void DrawLasers(void)
+void DrawLasers(LaserManager* mgr)
 {
     for (int i = 0; i < MAX_LASERS; i++)
     {
-        if (lasers[i].active)
+        if (mgr->lasers[i].active)
         {
-            DrawLine3D(lasers[i].start, lasers[i].end, lasers[i].color);
+            DrawLine3D(mgr->lasers[i].start, mgr->lasers[i].end, mgr->lasers[i].color);
         }
     }
 }
