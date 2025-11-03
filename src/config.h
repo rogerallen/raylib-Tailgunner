@@ -21,7 +21,7 @@
 #define ENEMY_REPEL_DT_DFRAME 0.01f  // Speed when repelled
 
 // Maximum counts
-#define MAX_ENEMIES 50
+#define MAX_ENEMIES 6  // WAVE_SIZE + buffer for transitioning states
 #define MAX_LASERS 2
 #define MAX_STARS 500
 
