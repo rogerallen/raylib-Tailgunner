@@ -31,6 +31,9 @@ int main(void)
 
     Sound shootSound = LoadSound("resources/shoot.wav");
     Sound explosionSound = LoadSound("resources/explosion.wav");
+    Sound forceFieldSound = LoadSound("resources/forcefield.wav");
+    Sound forceFailSound = LoadSound("resources/forcefail.wav");
+    Sound forceFieldHitSound = LoadSound("resources/bounce.wav");
 
     while (!WindowShouldClose())
     {
@@ -56,13 +59,13 @@ int main(void)
 
                 if (IsKeyPressed(KEY_SPACE))
                 {
-                    ActivateForceField();
+                    ActivateForceField(forceFieldSound, forceFailSound);
                 }
 
                 UpdateLasers();
                 UpdateStarfield();
                 UpdateEnemies(&lives, &wave);
-                UpdateForceField();
+                UpdateForceField(forceFieldHitSound);
 
                 if (lives <= 0)
                 {

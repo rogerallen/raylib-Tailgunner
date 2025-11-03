@@ -17,8 +17,8 @@ extern ForceFieldState ff_state;
 extern float ff_charge;
 
 void InitForceField(void);
-void UpdateForceField(void);
-void ActivateForceField(void);
+void UpdateForceField(Sound forceFieldHitSound);
+void ActivateForceField(Sound forceFieldSound, Sound forceFailSound);
 void DrawForceField2D(void);
 void DrawForceFieldUI(void);
 

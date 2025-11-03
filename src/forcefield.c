@@ -13,16 +13,19 @@ void InitForceField(void)
     ff_timer = 0.0f;
 }
 
-void ActivateForceField(void)
+void ActivateForceField(Sound forceFieldSound, Sound forceFailSound)
 {
     if (ff_state == FF_STATE_READY)
     {
         ff_state = FF_STATE_ACTIVE;
         ff_timer = FORCE_FIELD_ACTIVE_TIME;
+        PlaySound(forceFieldSound);
+    } else {
+        PlaySound(forceFailSound);
     }
 }
 
-void UpdateForceField(void)
+void UpdateForceField(Sound forceFieldHitSound)
 {
     if (ff_state == FF_STATE_ACTIVE)
     {
@@ -35,15 +38,19 @@ void UpdateForceField(void)
         }
 
         // Push back enemies
+        bool hit = false;
         for (int i = 0; i < MAX_ENEMIES; i++)
         {
             if (enemies[i].active && enemies[i].position.z > 0 && enemies[i].position.z < FORCE_FIELD_RADIUS)
             {
                 enemies[i].state = ENEMY_STATE_REPELLED;
+                hit = true;
                 enemies[i].repel_start_pos = enemies[i].position;
                 enemies[i].repel_t = 0.0f;
             }
         }
+
+        if (hit) PlaySound(forceFieldHitSound);
     }
     else if (ff_state == FF_STATE_COOLDOWN)
     {
