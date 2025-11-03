@@ -1,6 +1,7 @@
 #include "laser.h"
 #include "enemy.h"
 #include "raymath.h"
+#include "config.h"
 
 Laser lasers[MAX_LASERS];
 
@@ -59,10 +60,10 @@ int FireLasers(Ray ray, Camera camera, Sound explosionSound)
             // Alternate left/right offset per laser slot
             float horiz = (i % 2 == 0) ? -0.5f : 0.5f;
             Vector3 offset = Vector3Add(Vector3Scale(camRight, horiz), Vector3Scale(camUp, -0.5f));
-            Vector3 startPos = Vector3Add(camera.position, Vector3Add(Vector3Scale(camForward, 0.5f), offset));
+                Vector3 startPos = Vector3Add(camera.position, Vector3Add(Vector3Scale(camForward, LASER_START_FORWARD_OFFSET), offset));
 
             lasers[i].active = true;
-            lasers[i].lifeTime = 0.2f;
+                lasers[i].lifeTime = LASER_LIFETIME; // use configurable lifetime
             lasers[i].start = startPos;
             lasers[i].end = endPos;
             lasers[i].color = RED;
@@ -75,10 +76,10 @@ int FireLasers(Ray ray, Camera camera, Sound explosionSound)
     {
         float horiz = 0.0f;
         Vector3 offset = Vector3Add(Vector3Scale(camRight, horiz), Vector3Scale(camUp, -0.5f));
-        Vector3 startPos = Vector3Add(camera.position, Vector3Add(Vector3Scale(camForward, 0.5f), offset));
+            Vector3 startPos = Vector3Add(camera.position, Vector3Add(Vector3Scale(camForward, LASER_START_FORWARD_OFFSET), offset));
 
         lasers[0].active = true;
-        lasers[0].lifeTime = 0.2f;
+            lasers[0].lifeTime = LASER_LIFETIME;
         lasers[0].start = startPos;
         lasers[0].end = endPos;
         lasers[0].color = RED;

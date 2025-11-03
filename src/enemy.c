@@ -1,4 +1,5 @@
 #include "enemy.h"
+#include "config.h"
 #include "raymath.h"
 #include "rlgl.h"
 
@@ -47,7 +48,7 @@ void InitEnemies(void)
     for (int i = 0; i < MAX_ENEMIES; i++)
     {
         enemies[i].active = false;
-        enemies[i].radius = 1.0f;
+        enemies[i].radius = ENEMY_DEFAULT_RADIUS;
         enemies[i].color = BLUE;
         enemies[i].state = ENEMY_STATE_NORMAL;
         enemies[i].rotationAxis = (Vector3){ 0.0f, 1.0f, 0.0f };
@@ -57,7 +58,7 @@ void InitEnemies(void)
 
 void SpawnWave(int wave)
 {
-    int waveSize = 3;
+    int waveSize = WAVE_SIZE;
     int enemyIndex[waveSize];
     int found = 0;
 

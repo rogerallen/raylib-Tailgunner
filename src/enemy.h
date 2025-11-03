@@ -2,8 +2,7 @@
 #define ENEMY_H
 
 #include "raylib.h"
-
-#define MAX_ENEMIES 50
+#include "config.h"
 
 typedef enum {
     ENEMY_STATE_NORMAL,

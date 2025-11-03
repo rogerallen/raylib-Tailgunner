@@ -4,7 +4,7 @@
 
 #include "raylib.h"
 
-#define MAX_STARS 500
+#include "config.h"
 
 typedef struct Star {
     Vector3 position;

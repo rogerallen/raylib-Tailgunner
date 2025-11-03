@@ -2,10 +2,7 @@
 #define FORCEFIELD_H
 
 #include "raylib.h"
-
-#define FORCE_FIELD_TIMEOUT 10.0f
-#define FORCE_FIELD_ACTIVE_TIME 1.0f
-#define FORCE_FIELD_RADIUS 10.0f
+#include "config.h"
 
 typedef enum {
     FF_STATE_READY,

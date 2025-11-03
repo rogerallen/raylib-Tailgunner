@@ -3,7 +3,7 @@
 
 #include "raylib.h"
 
-#define MAX_LASERS 2
+#include "config.h"
 
 typedef struct Laser {
     Vector3 start;
