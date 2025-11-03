@@ -41,7 +41,7 @@ void UpdateForceField(Sound forceFieldHitSound)
         bool hit = false;
         for (int i = 0; i < MAX_ENEMIES; i++)
         {
-            if (enemies[i].active && enemies[i].position.z > 0 && enemies[i].position.z < FORCE_FIELD_RADIUS)
+            if (enemies[i].active && enemies[i].position.z < 0 && -enemies[i].position.z < FORCE_FIELD_RADIUS)
             {
                 enemies[i].state = ENEMY_STATE_REPELLED;
                 hit = true;
