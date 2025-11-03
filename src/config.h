@@ -15,6 +15,11 @@
 // Laser forward start offset from camera (to avoid near-plane clipping)
 #define LASER_START_FORWARD_OFFSET 0.5f
 
+// Enemy movement speeds
+#define ENEMY_DT_DFRAME 0.0025f      // Base speed per frame along Bezier curve
+#define ENEMY_WAVE_DT_DFRAME 0.0001f // Additional speed per wave (wave difficulty scaling)
+#define ENEMY_REPEL_DT_DFRAME 0.01f  // Speed when repelled
+
 // Maximum counts
 #define MAX_ENEMIES 50
 #define MAX_LASERS 2

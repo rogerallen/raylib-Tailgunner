@@ -105,7 +105,7 @@ void UpdateEnemies(int* lives, int* wave)
             {
                 case ENEMY_STATE_NORMAL:
                 {
-                    enemies[i].t += 0.0025f + (*wave * 0.0001f);
+                    enemies[i].t += ENEMY_DT_DFRAME + (*wave * ENEMY_WAVE_DT_DFRAME);
                     enemies[i].position = GetCubicBezierPoint(enemies[i].p0, enemies[i].p1, enemies[i].p2, enemies[i].p3, enemies[i].t);
 
                     if (enemies[i].t >= 1.0f)
@@ -116,7 +116,7 @@ void UpdateEnemies(int* lives, int* wave)
                 } break;
                 case ENEMY_STATE_REPELLED:
                 {
-                    enemies[i].repel_t += 0.01f;
+                    enemies[i].repel_t += ENEMY_REPEL_DT_DFRAME;
                     enemies[i].position = Vector3Lerp(enemies[i].repel_start_pos, enemies[i].p0, enemies[i].repel_t);
                     enemies[i].rotationAngle += 360.0f * GetFrameTime();
 
