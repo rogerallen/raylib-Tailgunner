@@ -75,8 +75,7 @@ int FireLasers(LaserManager* lmgr, struct EnemyManager* emgr, Ray ray, Camera ca
         endPos = emgr->enemies[closestEnemyIndex].position;
         emgr->enemies[closestEnemyIndex].active = false;
         hits++;
-        // Play explosion sound here is OK, but caller may prefer to handle audio; keep for now
-        PlaySound(explosionSound);
+        // Note: audio playback moved to the caller to keep this function side-effect-free
     }
 
     // Spawn beam(s) into available laser slots. Place starts slightly offset left/right and forward.

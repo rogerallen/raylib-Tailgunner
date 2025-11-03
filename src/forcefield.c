@@ -30,22 +30,21 @@ void InitForceField(ForceFieldManager* mgr)
     mgr->timer = 0.0f;
 }
 
-void ActivateForceField(ForceFieldManager* mgr, Sound forceFieldSound, Sound forceFailSound)
+bool ActivateForceField(ForceFieldManager* mgr)
 {
     if (mgr->state == FF_STATE_READY)
     {
         mgr->state = FF_STATE_ACTIVE;
         mgr->timer = FORCE_FIELD_ACTIVE_TIME;
-        PlaySound(forceFieldSound);
+        return true; // activation succeeded
     }
-    else
-    {
-        PlaySound(forceFailSound);
-    }
+    return false; // activation failed (cooldown)
 }
 
-void UpdateForceField(ForceFieldManager* mgr, struct EnemyManager* emgr, Sound forceFieldHitSound)
+bool UpdateForceField(ForceFieldManager* mgr, struct EnemyManager* emgr)
 {
+    bool anyHit = false;
+
     if (mgr->state == FF_STATE_ACTIVE)
     {
         mgr->timer -= GetFrameTime();
@@ -57,20 +56,17 @@ void UpdateForceField(ForceFieldManager* mgr, struct EnemyManager* emgr, Sound f
         }
 
         // Push back enemies
-        bool hit = false;
         for (int i = 0; i < MAX_ENEMIES; i++)
         {
             Enemy* e = &emgr->enemies[i];
             if (e->active && e->position.z < 0 && -e->position.z < FORCE_FIELD_RADIUS)
             {
                 e->state = ENEMY_STATE_REPELLED;
-                hit = true;
+                anyHit = true;
                 e->repel_start_pos = e->position;
                 e->repel_t = 0.0f;
             }
         }
-
-        if (hit) PlaySound(forceFieldHitSound);
     }
     else if (mgr->state == FF_STATE_COOLDOWN)
     {
@@ -82,6 +78,8 @@ void UpdateForceField(ForceFieldManager* mgr, struct EnemyManager* emgr, Sound f
             mgr->charge = 1.0f;
         }
     }
+
+    return anyHit;
 }
 
 void DrawForceField2D(ForceFieldManager* mgr)

@@ -28,5 +28,3 @@ These notes describe the high-level organization of the code and the role of `sr
 	centralized.
 - Controls: left click to fire, space to activate the force field, Enter or click to start/continue.
 
-If you plan to extend or refactor the project, consider making the managers opaque (create/destroy
-APIs) and moving audio handling fully to `main.c` so subsystems don't call `PlaySound` directly.

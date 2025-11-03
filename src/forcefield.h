@@ -44,7 +44,8 @@ void InitForceField(ForceFieldManager* mgr);
  * @param forceFieldHitSound Sound to play when enemies are repelled
  */
 // Update will need access to enemies in order to apply repulsion
-void UpdateForceField(ForceFieldManager* mgr, struct EnemyManager* emgr, Sound forceFieldHitSound);
+// Update returns true if any enemies were repelled this frame (caller may play a sound)
+bool UpdateForceField(ForceFieldManager* mgr, struct EnemyManager* emgr);
 
 /**
  * Attempt to activate the force field
@@ -52,7 +53,9 @@ void UpdateForceField(ForceFieldManager* mgr, struct EnemyManager* emgr, Sound f
  * @param forceFieldSound Sound to play on successful activation
  * @param forceFailSound Sound to play if activation fails (cooling down)
  */
-void ActivateForceField(ForceFieldManager* mgr, Sound forceFieldSound, Sound forceFailSound);
+// Attempt to activate the force field. Returns true on success, false if activation failed
+// (caller may play success/fail sounds).
+bool ActivateForceField(ForceFieldManager* mgr);
 
 /**
  * Draw the 2D force field grid effect when active

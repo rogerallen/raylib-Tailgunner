@@ -76,19 +76,23 @@ int main(void)
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
                 {
                     Ray ray = GetMouseRay(GetMousePosition(), camera);
-                    score += FireLasers(&laserMgr, &enemyMgr, ray, camera, explosionSound);
+                    int hits = FireLasers(&laserMgr, &enemyMgr, ray, camera, explosionSound);
+                    score += hits;
+                    if (hits > 0) PlaySound(explosionSound);
                     PlaySound(shootSound);
                 }
 
                 if (IsKeyPressed(KEY_SPACE))
                 {
-                    ActivateForceField(&ffMgr, forceFieldSound, forceFailSound);
+                    bool activated = ActivateForceField(&ffMgr);
+                    if (activated) PlaySound(forceFieldSound); else PlaySound(forceFailSound);
                 }
 
                 UpdateLasers(&laserMgr);
                 UpdateStarfield();
                 UpdateEnemies(&enemyMgr, &lives, &wave);
-                UpdateForceField(&ffMgr, &enemyMgr, forceFieldHitSound);
+                bool ffHit = UpdateForceField(&ffMgr, &enemyMgr);
+                if (ffHit) PlaySound(forceFieldHitSound);
 
                 if (lives <= 0)
                 {
