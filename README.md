@@ -4,6 +4,8 @@ Mostly vibe-coded via gemini-2.5-pro over 2 days.  I'm a bit astonished, honestl
 
 Fix the RAYLIB_PATH in the Makefile if you want to try this out.  Download a build of raylib from [here](https://github.com/raysan5/raylib/releases).
 
+Controls: **left click** to fire, **space** to activate the force field, Enter or click to start/continue.
+
 <p align="center">
 	<img src="resources/screenshot.png" alt="Tailgunner screenshot" width="800" />
 </p>
@@ -26,5 +28,4 @@ These notes describe the high-level organization of the code and the role of `sr
 	enemies, forcefield), then Render (3D mode: starfield, enemies, lasers; 2D overlays and UI).
 - Important configuration values (counts, lifetimes, radii) live in `src/config.h` so tuning is
 	centralized.
-- Controls: left click to fire, space to activate the force field, Enter or click to start/continue.
 
