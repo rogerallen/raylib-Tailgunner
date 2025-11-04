@@ -1,5 +1,6 @@
 # build products
 tailgunner
+tailgunner.data
 tailgunner.html
 tailgunner.js
 tailgunner.wasm

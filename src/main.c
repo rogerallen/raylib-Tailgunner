@@ -1,9 +1,13 @@
 #include "raylib.h"
+#if defined(PLATFORM_WEB)
+#include <emscripten/emscripten.h>
+#endif
 #include "enemy.h"
 #include "game.h"
 #include "starfield.h"
 #include "laser.h"
 #include "forcefield.h"
+#include <stdio.h>
 
 //----------------------------------------------------------------------------------
 // main.c - Game entry and orchestration
@@ -27,11 +31,18 @@ void InitGame(int* score, int* lives, int* wave, struct LaserManager* lmgr, stru
 //----------------------------------------------------------------------------------
 int main(void)
 {
+#if defined(PLATFORM_WEB)
+    const int screenWidth = 1200;
+    const int screenHeight = 675;
+#else
     const int screenWidth = 1600;
     const int screenHeight = 900;
+#endif
 
     SetConfigFlags(FLAG_MSAA_4X_HINT);
     InitWindow(screenWidth, screenHeight, "raylib - Tailgunner");
+
+    SetTargetFPS(60);
 
     GameState gameState = STATE_START;
     Camera camera = { 0 };
@@ -57,6 +68,9 @@ int main(void)
     Sound forceFieldSound = LoadSound("resources/forcefield.wav");
     Sound forceFailSound = LoadSound("resources/forcefail.wav");
     Sound forceFieldHitSound = LoadSound("resources/bounce.wav");
+
+    int frameCount = 0;
+    double previousTime = GetTime();
 
     while (!WindowShouldClose())
     {
@@ -144,6 +158,20 @@ int main(void)
         }
 
         EndDrawing();
+
+        frameCount++;
+        double currentTime = GetTime();
+        double elapsedTime = currentTime - previousTime;
+        if (elapsedTime >= 1.0)
+        {
+#if defined(PLATFORM_WEB)
+            emscripten_log(EM_LOG_CONSOLE, "Average FPS: %.2f", frameCount / elapsedTime);
+#else
+            printf("Average FPS: %.2f\n", frameCount / elapsedTime);
+#endif
+            frameCount = 0;
+            previousTime = currentTime;
+        }
     }
 
     UnloadSound(shootSound);
