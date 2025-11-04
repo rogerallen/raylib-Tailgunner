@@ -13,24 +13,31 @@ PLATFORM ?= native
 # Default object directory
 OBJ_DIR = obj/$(PLATFORM)
 
+# Native build raylib path where lib/libraylib.* files are located
+# Download from https://github.com/raysan5/raylib/releases
+RAYLIB_NATIVE_PATH ?= /home/rallen/Documents/Devel/raylib/raylib-5.5_linux_amd64
+
 # Emscripten environment
-EMSDK_ENV ?= /home/rallen/Documents/Devel/emscripten/emsdk/emsdk_env.sh
+EMSDK_PATH ?= /home/rallen/Documents/Devel/emscripten/emsdk
+EMSDK_ENV = $(EMSDK_PATH)/emsdk_env.sh
+# Path to where raylib/libraylib.a is located.  Typically you will need to build this yourself.
+RAYLIB_EMSCRIPTEN_PATH ?= /home/rallen/Documents/Devel/raylib/raylib
 
 # Compiler and flags
 ifeq ($(PLATFORM), web)
     CC = emcc
     CFLAGS = -Wall -std=c99 -D_DEFAULT_SOURCE -Wno-missing-braces -DPLATFORM_WEB
     LDFLAGS = -O1 -s USE_GLFW=3 -s ASYNCIFY
-    RAYLIB_PATH ?= /home/rallen/Documents/Devel/raylib
-    INCLUDE_PATHS = -I$(SRC_DIR) -I$(RAYLIB_PATH)/raylib/src
-    LIBRARY_PATHS = -L$(RAYLIB_PATH)/raylib/raylib
+    RAYLIB_PATH ?= $(RAYLIB_EMSCRIPTEN_PATH)
+    INCLUDE_PATHS = -I$(SRC_DIR) -I$(RAYLIB_PATH)/src
+    LIBRARY_PATHS = -L$(RAYLIB_PATH)/raylib
     LDLIBS = -lraylib
     TARGET = $(PROJECT_NAME).html
 else
     CC = gcc
     CFLAGS = -Wall -std=c99 -D_DEFAULT_SOURCE -Wno-missing-braces
     CFLAGS += -g -O0 # Debug flags
-    RAYLIB_PATH ?= /home/rallen/Documents/Devel/raylib/raylib-5.5_linux_amd64
+    RAYLIB_PATH ?= $(RAYLIB_NATIVE_PATH)
     INCLUDE_PATHS = -I$(SRC_DIR) -I$(RAYLIB_PATH)/include
     LDFLAGS = -L$(RAYLIB_PATH)/lib
     LDLIBS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
@@ -51,7 +58,7 @@ web:
 
 $(TARGET): $(OBJS)
 ifeq ($(PLATFORM), web)
-	$(CC) -o $@ $^ $(CFLAGS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(LDLIBS) $(LDFLAGS) --shell-file $(RAYLIB_PATH)/raylib/src/shell.html
+	$(CC) -o $@ $^ $(CFLAGS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(LDLIBS) $(LDFLAGS) --shell-file $(RAYLIB_PATH)/src/shell.html
 else
 	$(CC) -o $@ $^ $(CFLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS)
 endif

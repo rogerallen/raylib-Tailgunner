@@ -1,14 +1,34 @@
 # Raylib Tailgunner Clone
 
-Mostly vibe-coded via gemini-2.5-pro over 2 days.  I'm a bit astonished, honestly.
-
-Fix the RAYLIB_PATH in the Makefile if you want to try this out.  Download a build of raylib from [here](https://github.com/raysan5/raylib/releases).
+Mostly vibe-coded via gemini-2.5-pro over 2 days.  I'm a bit astonished, honestly.  Now starting to mix 
+my own coding with gemini's.
 
 Controls: **left click** to fire, **space** to activate the force field, Enter or click to start/continue.
 
 <p align="center">
 	<img src="resources/screenshot.png" alt="Tailgunner screenshot" width="800" />
 </p>
+
+## Building & running
+
+### Linux Native Build
+
+Look in makefile and point RAYLIB_NATIVE_PATH to the right spot.  You will need a native build of raylib.  Download a build of raylib from [here](https://github.com/raysan5/raylib/releases).
+
+```
+make
+make run
+```
+
+### Emscripten Build and Serve
+
+Look in the Makefile and point EMSDK_PATH and RAYLIB_EMSCRIPTEN_PATH to the right spot.  You will need a build of emscripten raylib.
+
+```
+make web
+make webserve
+```
+Now open http://localhost:8000/tailgunner.html and you should see the game.
 
 ## Module-level notes
 
