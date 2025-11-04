@@ -1,3 +1,8 @@
+# build products
 tailgunner
+tailgunner.html
+tailgunner.js
+tailgunner.wasm
 obj
+# dev environment
 .vscode
