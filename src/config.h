@@ -23,11 +23,7 @@
 // Maximum counts
 
 #define MAX_LASERS 2
-#if defined(PLATFORM_WEB)
-#define MAX_STARS 100
-#else
 #define MAX_STARS 500
-#endif
 
 // Force field tuning
 #define FORCE_FIELD_TIMEOUT 10.0f

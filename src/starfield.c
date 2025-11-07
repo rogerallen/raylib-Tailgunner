@@ -71,6 +71,6 @@ void DrawStarfield(void)
 {
     for (int i = 0; i < MAX_STARS; i++)
     {
-        DrawSphere(stars[i].position, 0.1f, stars[i].color); // Draw as small spheres
+        DrawCubeV(stars[i].position, (Vector3){0.1f, 0.1f, 0.1f}, stars[i].color);
     }
 }
