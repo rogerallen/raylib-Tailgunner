@@ -221,8 +221,17 @@ static void DrawEnemyShip(const Enemy* enemy)
 {
     float r = enemy->radius;
     float fin_r = 1.0f; // Fin size relative to body radius
-    Vector3 forward = GetCubicBezierTangent(enemy->p0, enemy->p1, enemy->p2, enemy->p3, enemy->t);
-    if (enemy->state == ENEMY_STATE_REPELLED) forward = Vector3Normalize(Vector3Subtract(enemy->p0, enemy->position));
+    Vector3 forward;
+    if (enemy->state == ENEMY_STATE_REPELLED) {
+        Vector3 to_p0 = Vector3Subtract(enemy->p0, enemy->position);
+        if (Vector3LengthSqr(to_p0) > 0.0001f) {
+            forward = Vector3Normalize(to_p0);
+        } else {
+            forward = GetCubicBezierTangent(enemy->p0, enemy->p1, enemy->p2, enemy->p3, 0.0f);
+        }
+    } else {
+        forward = GetCubicBezierTangent(enemy->p0, enemy->p1, enemy->p2, enemy->p3, enemy->t);
+    }
 
     Vector3 up = { 0.0f, 1.0f, 0.0f };
     Vector3 right = Vector3CrossProduct(forward, up);
