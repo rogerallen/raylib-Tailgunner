@@ -65,6 +65,7 @@ int main(void)
     Sound forceFieldHitSound = LoadSound("resources/bounce.wav");
 
     int frameCount = 0;
+    int touch_count_last_frame = 0;
     double previousTime = GetTime();
 
     while (!WindowShouldClose())
@@ -96,6 +97,14 @@ int main(void)
                     bool activated = ActivateForceField(&ffMgr);
                     if (activated) PlaySound(forceFieldSound); else PlaySound(forceFailSound);
                 }
+
+                int touch_count = GetTouchPointCount();
+                if (touch_count == 2 && touch_count_last_frame != 2)
+                {
+                    bool activated = ActivateForceField(&ffMgr);
+                    if (activated) PlaySound(forceFieldSound); else PlaySound(forceFailSound);
+                }
+                touch_count_last_frame = touch_count;
 
                 UpdateLasers(&laserMgr);
                 UpdateStarfield();
