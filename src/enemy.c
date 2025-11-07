@@ -69,7 +69,7 @@ static Vector3 GetCubicBezierTangent(Vector3 p0, Vector3 p1, Vector3 p2, Vector3
 
     // Avoid normalizing a near-zero vector which can produce NaNs
     float len = Vector3Length(result);
-    if (len < 1e-6f) return (Vector3){ 0.0f, 0.0f, 1.0f };
+    if (len < 1e-6f) return (Vector3){ 0.0f, 0.0f, 0.0f };
     return Vector3Scale(result, 1.0f / len);
 }
 
@@ -127,6 +127,8 @@ void SpawnWave(EnemyManager* mgr, int wave)
             e->active = true;
             e->state = ENEMY_STATE_NORMAL;
             e->t = 0.0f;
+            e->rotationAngle = 0.0f;
+            e->rotationAxis = (Vector3){ 0.0f, 1.0f, 0.0f };
 
             float zOffset = i * -10.0f;
             int side = (i % 2 == 0) ? 1 : -1;
@@ -231,6 +233,9 @@ static void DrawEnemyShip(const Enemy* enemy)
         }
     } else {
         forward = GetCubicBezierTangent(enemy->p0, enemy->p1, enemy->p2, enemy->p3, enemy->t);
+        if (Vector3LengthSqr(forward) < 0.0001f) {
+            forward = Vector3Normalize(Vector3Negate(enemy->position));
+        }
     }
 
     Vector3 up = { 0.0f, 1.0f, 0.0f };
