@@ -56,7 +56,7 @@ bool UpdateForceField(ForceFieldManager* mgr, struct EnemyManager* emgr)
         }
 
         // Push back enemies
-        for (int i = 0; i < MAX_ENEMIES; i++)
+        for (int i = 0; i < WAVE_SIZE; i++)
         {
             Enemy* e = &emgr->enemies[i];
             if (e->active && e->position.z < 0 && -e->position.z < FORCE_FIELD_RADIUS)

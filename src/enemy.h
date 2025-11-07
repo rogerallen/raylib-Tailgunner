@@ -39,7 +39,7 @@ typedef struct Enemy {
 // Opaque manager to avoid globals. Keep the array inside this struct so callers
 // can allocate or pass around manager instances instead of using a global.
 typedef struct EnemyManager {
-    Enemy enemies[MAX_ENEMIES];
+    Enemy enemies[WAVE_SIZE];
 } EnemyManager;
 
 //----------------------------------------------------------------------------------

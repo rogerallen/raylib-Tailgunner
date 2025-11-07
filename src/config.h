@@ -4,7 +4,7 @@
 // Gameplay tuning constants
 
 // Number of enemies spawned per wave
-#define WAVE_SIZE 3
+#define WAVE_SIZE 5
 
 // Default enemy radius
 #define ENEMY_DEFAULT_RADIUS 1.0f
@@ -16,12 +16,12 @@
 #define LASER_START_FORWARD_OFFSET 0.5f
 
 // Enemy movement speeds
-#define ENEMY_DT_DFRAME 0.0025f      // Base speed per frame along Bezier curve
-#define ENEMY_WAVE_DT_DFRAME 0.0001f // Additional speed per wave (wave difficulty scaling)
-#define ENEMY_REPEL_DT_DFRAME 0.01f  // Speed when repelled
+#define ENEMY_DT_DFRAME       0.0025f  // Base speed per frame along Bezier curve
+#define ENEMY_WAVE_DT_DFRAME  0.00025f // Additional speed per wave (wave difficulty scaling)
+#define ENEMY_REPEL_DT_DFRAME 0.01f   // Speed when repelled
 
 // Maximum counts
-#define MAX_ENEMIES 6  // WAVE_SIZE + buffer for transitioning states
+
 #define MAX_LASERS 2
 #if defined(PLATFORM_WEB)
 #define MAX_STARS 100

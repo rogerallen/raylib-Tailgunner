@@ -85,7 +85,7 @@ static Vector3 GetCubicBezierTangent(Vector3 p0, Vector3 p1, Vector3 p2, Vector3
 //----------------------------------------------------------------------------------
 void InitEnemies(EnemyManager* mgr)
 {
-    for (int i = 0; i < MAX_ENEMIES; i++)
+    for (int i = 0; i < WAVE_SIZE; i++)
     {
         mgr->enemies[i].active = false;
         mgr->enemies[i].radius = ENEMY_DEFAULT_RADIUS;
@@ -110,7 +110,7 @@ void SpawnWave(EnemyManager* mgr, int wave)
     int found = 0;
 
     // Find enough inactive enemies for a wave
-    for (int i = 0; i < MAX_ENEMIES && found < waveSize; i++)
+    for (int i = 0; i < WAVE_SIZE && found < waveSize; i++)
     {
         if (!mgr->enemies[i].active)
         {
@@ -151,7 +151,7 @@ void UpdateEnemies(EnemyManager* mgr, int* lives, int* wave)
 {
     int activeEnemies = 0;
 
-    for (int i = 0; i < MAX_ENEMIES; i++)
+    for (int i = 0; i < WAVE_SIZE; i++)
     {
         Enemy* e = &mgr->enemies[i];
         if (e->active)
@@ -204,7 +204,7 @@ void UpdateEnemies(EnemyManager* mgr, int* lives, int* wave)
 //----------------------------------------------------------------------------------
 void DrawEnemies(EnemyManager* mgr)
 {
-    for (int i = 0; i < MAX_ENEMIES; i++)
+    for (int i = 0; i < WAVE_SIZE; i++)
     {
         if (mgr->enemies[i].active)
         {

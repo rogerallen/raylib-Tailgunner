@@ -50,7 +50,7 @@ int FireLasers(LaserManager* lmgr, struct EnemyManager* emgr, Ray ray, Camera ca
     float closestHitDist = 1e6f;
     int closestEnemyIndex = -1;
 
-    for (int i = 0; i < MAX_ENEMIES; i++)
+    for (int i = 0; i < WAVE_SIZE; i++)
     {
         if (emgr->enemies[i].active)
         {
