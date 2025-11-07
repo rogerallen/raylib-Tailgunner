@@ -28,7 +28,7 @@ DEBUG ?= 0
 # Compiler and flags
 ifeq ($(PLATFORM), web)
     CC = emcc
-    CFLAGS = -Wall -std=c99 -D_DEFAULT_SOURCE -Wno-missing-braces -DPLATFORM_WEB
+    CFLAGS = -Wall -std=c99 -D_DEFAULT_SOURCE -Wno-missing-braces -DPLATFORM_WEB -MMD -MP
     ifeq ($(DEBUG), 1)
         LDFLAGS = -O0 -g -s ASSERTIONS=1 
     else
@@ -42,7 +42,7 @@ ifeq ($(PLATFORM), web)
     TARGET = $(PROJECT_NAME).html
 else
     CC = gcc
-    CFLAGS = -Wall -std=c99 -D_DEFAULT_SOURCE -Wno-missing-braces
+    CFLAGS = -Wall -std=c99 -D_DEFAULT_SOURCE -Wno-missing-braces -MMD -MP
     ifeq ($(DEBUG), 1)
         CFLAGS += -g -O0 # Debug flags
     else
@@ -88,3 +88,5 @@ run: all
 
 webserve:
 	python3 -m http.server 8000
+
+-include $(OBJS:.o=.d)
