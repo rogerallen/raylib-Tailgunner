@@ -31,15 +31,10 @@ void InitGame(int* score, int* lives, int* wave, struct LaserManager* lmgr, stru
 //----------------------------------------------------------------------------------
 int main(void)
 {
-#if defined(PLATFORM_WEB)
-    const int screenWidth = 1200;
-    const int screenHeight = 675;
-#else
-    const int screenWidth = 1600;
-    const int screenHeight = 900;
-#endif
+    int screenWidth = 1600;
+    int screenHeight = 900;
 
-    SetConfigFlags(FLAG_MSAA_4X_HINT);
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
     InitWindow(screenWidth, screenHeight, "raylib - Tailgunner");
 
     SetTargetFPS(60);
