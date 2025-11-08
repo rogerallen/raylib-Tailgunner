@@ -35,7 +35,7 @@ void InitStarfield(void)
     for (int i = 0; i < MAX_STARS; i++)
     {
         stars[i].position = (Vector3){ GetRandomValue(-100, 100), GetRandomValue(-100, 100), GetRandomValue(-200, 0) };
-        stars[i].color = (Color){ 255, 255, 255, GetRandomValue(100, 255) };
+        stars[i].color = (Color){ COLOR_STAR.r, COLOR_STAR.g, COLOR_STAR.b, GetRandomValue(100, 255) };
     }
 }
 

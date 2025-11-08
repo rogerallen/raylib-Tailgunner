@@ -7,6 +7,7 @@
 #include "starfield.h"
 #include "laser.h"
 #include "forcefield.h"
+#include "config.h"
 #include <stdio.h>
 
 //----------------------------------------------------------------------------------
@@ -129,12 +130,12 @@ int main(void)
         }
 
         BeginDrawing();
-        ClearBackground(BLACK);
+        ClearBackground(COLOR_BACKGROUND);
 
         if (gameState == STATE_START)
         {
-            DrawText("TAILGUNNER", GetScreenWidth() / 2 - MeasureText("TAILGUNNER", 40) / 2, GetScreenHeight() / 2 - 40, 40, LIGHTGRAY);
-            DrawText("Press ENTER or CLICK to Start", GetScreenWidth() / 2 - MeasureText("Press ENTER or CLICK to Start", 20) / 2, GetScreenHeight() / 2 + 20, 20, GRAY);
+            DrawText("TAILGUNNER", GetScreenWidth() / 2 - MeasureText("TAILGUNNER", 40) / 2, GetScreenHeight() / 2 - 40, 40, COLOR_TEXT_TITLE);
+            DrawText("Press ENTER or CLICK to Start", GetScreenWidth() / 2 - MeasureText("Press ENTER or CLICK to Start", 20) / 2, GetScreenHeight() / 2 + 20, 20, COLOR_TEXT_SUBTITLE);
         }
         else if (gameState == STATE_PLAYING)
         {
@@ -145,20 +146,20 @@ int main(void)
             EndMode3D();
             DrawForceField2D(&ffMgr);
 
-            DrawCircleLines(GetMouseX(), GetMouseY(), 10, MAROON);
-            DrawLine(GetMouseX() - 20, GetMouseY(), GetMouseX() + 20, GetMouseY(), RED);
-            DrawLine(GetMouseX(), GetMouseY() - 20, GetMouseX(), GetMouseY() + 20, RED);
+            DrawCircleLines(GetMouseX(), GetMouseY(), 10, COLOR_CROSSHAIR_CIRCLE);
+            DrawLine(GetMouseX() - 20, GetMouseY(), GetMouseX() + 20, GetMouseY(), COLOR_CROSSHAIR_LINES);
+            DrawLine(GetMouseX(), GetMouseY() - 20, GetMouseX(), GetMouseY() + 20, COLOR_CROSSHAIR_LINES);
 
-            DrawText(TextFormat("Score: %i", score), 10, 10, 20, GREEN);
-            DrawText(TextFormat("Lives: %i", lives), GetScreenWidth() - 100, 10, 20, RED);
-            DrawText(TextFormat("Wave: %i", wave), GetScreenWidth() / 2 - 20, 10, 20, YELLOW);
+            DrawText(TextFormat("Score: %i", score), 10, 10, 20, COLOR_TEXT_SCORE);
+            DrawText(TextFormat("Lives: %i", lives), GetScreenWidth() - 100, 10, 20, COLOR_TEXT_LIVES);
+            DrawText(TextFormat("Wave: %i", wave), GetScreenWidth() / 2 - 20, 10, 20, COLOR_TEXT_WAVE);
             DrawForceFieldUI(&ffMgr);
         }
         else if (gameState == STATE_GAME_OVER)
         {
-            DrawText("GAME OVER", GetScreenWidth() / 2 - MeasureText("GAME OVER", 40) / 2, GetScreenHeight() / 2 - 40, 40, RED);
-            DrawText(TextFormat("Final Score: %i", score), GetScreenWidth() / 2 - MeasureText(TextFormat("Final Score: %i", score), 20) / 2, GetScreenHeight() / 2 + 20, 20, GREEN);
-            DrawText("Press ENTER or CLICK to Return to Start", GetScreenWidth() / 2 - MeasureText("Press ENTER or CLICK to Return to Start", 20) / 2, GetScreenHeight() / 2 + 60, 20, GRAY);
+            DrawText("GAME OVER", GetScreenWidth() / 2 - MeasureText("GAME OVER", 40) / 2, GetScreenHeight() / 2 - 40, 40, COLOR_TEXT_GAMEOVER);
+            DrawText(TextFormat("Final Score: %i", score), GetScreenWidth() / 2 - MeasureText(TextFormat("Final Score: %i", score), 20) / 2, GetScreenHeight() / 2 + 20, 20, COLOR_TEXT_FINAL_SCORE);
+            DrawText("Press ENTER or CLICK to Return to Start", GetScreenWidth() / 2 - MeasureText("Press ENTER or CLICK to Return to Start", 20) / 2, GetScreenHeight() / 2 + 60, 20, COLOR_TEXT_SUBTITLE);
         }
 
         EndDrawing();

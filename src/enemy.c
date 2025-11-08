@@ -89,7 +89,7 @@ void InitEnemies(EnemyManager* mgr)
     {
         mgr->enemies[i].active = false;
         mgr->enemies[i].radius = ENEMY_DEFAULT_RADIUS;
-        mgr->enemies[i].color = BLUE;
+        mgr->enemies[i].color = COLOR_ENEMY;
         mgr->enemies[i].state = ENEMY_STATE_NORMAL;
         mgr->enemies[i].rotationAxis = (Vector3){ 0.0f, 1.0f, 0.0f };
         mgr->enemies[i].rotationAngle = 0.0f;

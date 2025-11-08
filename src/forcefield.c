@@ -95,7 +95,7 @@ void DrawForceField2D(ForceFieldManager* mgr)
         {
             for (int x = 0; x < 4; x++)
             {
-                DrawRectangleLines(x * cellWidth, y * cellHeight, cellWidth, cellHeight, LIME);
+                DrawRectangleLines(x * cellWidth, y * cellHeight, cellWidth, cellHeight, COLOR_FORCEFIELD_GRID);
             }
         }
     }
@@ -105,11 +105,11 @@ void DrawForceFieldUI(ForceFieldManager* mgr)
 {
     if (mgr->state == FF_STATE_READY)
     {
-        DrawText("Charge: FULL", 10, 40, 20, GREEN);
+        DrawText("Charge: FULL", 10, 40, 20, COLOR_FORCEFIELD_UI_READY);
     }
     else
     {
-        DrawText(TextFormat("Charge: %i%%", (int)(mgr->charge * 100)), 10, 40, 20, YELLOW);
+        DrawText(TextFormat("Charge: %i%%", (int)(mgr->charge * 100)), 10, 40, 20, COLOR_FORCEFIELD_UI_CHARGING);
     }
 }
 // - Displays percentage when not fully charged

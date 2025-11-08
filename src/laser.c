@@ -32,7 +32,9 @@ void InitLasers(LaserManager* mgr)
     {
         mgr->lasers[i].active = false;
         mgr->lasers[i].lifeTime = 0.0f;
-        mgr->lasers[i].color = RED;
+        mgr->lasers[i].start = (Vector3){ 0 };
+        mgr->lasers[i].end = (Vector3){ 0 };
+        mgr->lasers[i].color = COLOR_LASER;
     }
 }
 
@@ -87,13 +89,13 @@ int FireLasers(LaserManager* lmgr, struct EnemyManager* emgr, Ray ray, Camera ca
             // Alternate left/right offset per laser slot
             float horiz = (i % 2 == 0) ? -0.5f : 0.5f;
             Vector3 offset = Vector3Add(Vector3Scale(camRight, horiz), Vector3Scale(camUp, -0.5f));
-                Vector3 startPos = Vector3Add(camera.position, Vector3Add(Vector3Scale(camForward, LASER_START_FORWARD_OFFSET), offset));
+            Vector3 startPos = Vector3Add(camera.position, Vector3Add(Vector3Scale(camForward, LASER_START_FORWARD_OFFSET), offset));
 
             lmgr->lasers[i].active = true;
             lmgr->lasers[i].lifeTime = LASER_LIFETIME; // use configurable lifetime
             lmgr->lasers[i].start = startPos;
             lmgr->lasers[i].end = endPos;
-            lmgr->lasers[i].color = RED;
+            lmgr->lasers[i].color = COLOR_LASER;
             placed++;
         }
     }
@@ -103,13 +105,13 @@ int FireLasers(LaserManager* lmgr, struct EnemyManager* emgr, Ray ray, Camera ca
     {
         float horiz = 0.0f;
         Vector3 offset = Vector3Add(Vector3Scale(camRight, horiz), Vector3Scale(camUp, -0.5f));
-            Vector3 startPos = Vector3Add(camera.position, Vector3Add(Vector3Scale(camForward, LASER_START_FORWARD_OFFSET), offset));
+        Vector3 startPos = Vector3Add(camera.position, Vector3Add(Vector3Scale(camForward, LASER_START_FORWARD_OFFSET), offset));
 
         lmgr->lasers[0].active = true;
         lmgr->lasers[0].lifeTime = LASER_LIFETIME;
         lmgr->lasers[0].start = startPos;
         lmgr->lasers[0].end = endPos;
-        lmgr->lasers[0].color = RED;
+        lmgr->lasers[0].color = COLOR_LASER;
     }
 
     return hits;
