@@ -31,6 +31,7 @@
 #define FORCE_FIELD_RADIUS      10.0f
 
 // Color definitions
+#if 0
 #define COLOR_BACKGROUND                 BLACK
 #define COLOR_TEXT_TITLE                 LIGHTGRAY
 #define COLOR_TEXT_SUBTITLE              GRAY
@@ -47,6 +48,25 @@
 #define COLOR_FORCEFIELD_GRID            LIME
 #define COLOR_FORCEFIELD_UI_READY        GREEN
 #define COLOR_FORCEFIELD_UI_CHARGING     YELLOW
+#else
+#define VGREEN CLITERAL(Color){ 0x30, 0xf0, 0xe0, 0xff }
+#define COLOR_BACKGROUND                 BLACK
+#define COLOR_TEXT_TITLE                 VGREEN
+#define COLOR_TEXT_SUBTITLE              VGREEN
+#define COLOR_TEXT_SCORE                 VGREEN
+#define COLOR_TEXT_LIVES                 VGREEN
+#define COLOR_TEXT_WAVE                  VGREEN
+#define COLOR_TEXT_GAMEOVER              VGREEN
+#define COLOR_TEXT_FINAL_SCORE           VGREEN
+#define COLOR_CROSSHAIR_CIRCLE           VGREEN
+#define COLOR_CROSSHAIR_LINES            VGREEN
+#define COLOR_LASER                      VGREEN
+#define COLOR_ENEMY                      VGREEN
+#define COLOR_STAR                       VGREEN
+#define COLOR_FORCEFIELD_GRID            VGREEN
+#define COLOR_FORCEFIELD_UI_READY        VGREEN
+#define COLOR_FORCEFIELD_UI_CHARGING     VGREEN
+#endif
 
 
 #endif // CONFIG_H
