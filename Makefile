@@ -38,7 +38,7 @@ ifeq ($(PLATFORM), web)
     RAYLIB_PATH = $(RAYLIB_EMSCRIPTEN_PATH)
     INCLUDE_PATHS = -I$(SRC_DIR) -I$(RAYLIB_PATH)/src
     LIBRARY_PATHS = -L$(RAYLIB_PATH)/raylib
-    LDLIBS = -lraylib
+    LDLIBS = -lraylib -lhtml5 -lfetch
     TARGET = $(PROJECT_NAME).html
 else
     CC = gcc
@@ -56,7 +56,7 @@ else
 endif
 
 # Files
-SRC = $(wildcard $(SRC_DIR)/*.c)
+SRC = $(wildcard $(SRC_DIR)/*.c) $(SRC_DIR)/cJSON.c
 OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRC))
 
 # Targets

@@ -1,3 +1,5 @@
+#include "leaderboard.h"
+#include "leaderboard.h"
 #include "raylib.h"
 #if defined(PLATFORM_WEB)
 #include <emscripten/emscripten.h>
@@ -9,6 +11,13 @@
 #include "forcefield.h"
 #include "config.h"
 #include <stdio.h>
+
+// Explicit prototypes for leaderboard functions (Workaround)
+bool UpdateNameInput();
+void DrawNameInput();
+void SubmitScore(int score);
+void UpdateLeaderboard(int *gameState, int score);
+void SetLeaderboardActive(bool active);
 
 //----------------------------------------------------------------------------------
 // main.c - Game entry and orchestration
@@ -51,6 +60,7 @@ int main(void)
     int score = 0;
     int lives = 0;
     int wave = 0;
+    bool nameRequired = true;
 
     // Encapsulated managers (avoid globals)
     LaserManager laserMgr = { 0 };
@@ -58,6 +68,7 @@ int main(void)
     ForceFieldManager ffMgr = { 0 };
 
     InitAudioDevice();
+    InitLeaderboard();
 
     Sound shootSound = LoadSound("resources/shoot.wav");
     Sound explosionSound = LoadSound("resources/explosion.wav");
@@ -124,8 +135,36 @@ int main(void)
             {
                 if (IsKeyPressed(KEY_ENTER) || IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
                 {
-                    gameState = STATE_START;
+                    if (nameRequired)
+                    {
+                        gameState = STATE_ENTER_NAME;
+                    }
+                    else
+                    {
+                        gameState = STATE_SUBMIT_SCORE;
+                    }
                 }
+            } break;
+            case STATE_ENTER_NAME:
+            {
+                // UpdateNameInput is in leaderboard.c
+                // It returns true when the name is submitted
+                if (UpdateNameInput())
+                {
+                    nameRequired = false;
+                    gameState = STATE_SUBMIT_SCORE;
+                }
+            } break;
+            case STATE_SUBMIT_SCORE:
+            {
+                SubmitScore(score);
+                ResetLeaderboardFlags();
+                gameState = STATE_LEADERBOARD;
+                SetLeaderboardActive(true);
+            } break;
+            case STATE_LEADERBOARD:
+            {
+                UpdateLeaderboard((int *)&gameState, score);
             } break;
         }
 
@@ -160,8 +199,17 @@ int main(void)
         {
             DrawText("GAME OVER", GetScreenWidth() / 2 - MeasureText("GAME OVER", 40) / 2, GetScreenHeight() / 2 - 40, 40, COLOR_TEXT_GAMEOVER);
             DrawText(TextFormat("Final Score: %i", score), GetScreenWidth() / 2 - MeasureText(TextFormat("Final Score: %i", score), 20) / 2, GetScreenHeight() / 2 + 20, 20, COLOR_TEXT_FINAL_SCORE);
-            DrawText("Press ENTER or CLICK to Return to Start", GetScreenWidth() / 2 - MeasureText("Press ENTER or CLICK to Return to Start", 20) / 2, GetScreenHeight() / 2 + 60, 20, COLOR_TEXT_SUBTITLE);
+            DrawText("Press ENTER or CLICK to Continue", GetScreenWidth() / 2 - MeasureText("Press ENTER or CLICK to Continue", 20) / 2, GetScreenHeight() / 2 + 60, 20, COLOR_TEXT_SUBTITLE);
         }
+        else if (gameState == STATE_ENTER_NAME)
+        {
+            DrawNameInput();
+        }
+        else if (gameState == STATE_LEADERBOARD)
+        {
+            DrawLeaderboard();
+        }
+
 
         EndDrawing();
 
@@ -192,6 +240,7 @@ int main(void)
     return 0;
 }
 
+
 //----------------------------------------------------------------------------------
 // InitGame - Implementation Notes:
 // - Resets score, lives and wave to starting values
@@ -209,4 +258,5 @@ void InitGame(int* score, int* lives, int* wave, struct LaserManager* lmgr, stru
     SpawnWave(emgr, *wave);
     InitStarfield();
     InitForceField(ffmgr);
+    ResetLeaderboardFlags();
 }

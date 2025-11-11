@@ -2,8 +2,11 @@
 #define CONFIG_H
 
 // Version for display in title screen
-#define GAME_VERSION "v1.0"
+#define GAME_VERSION "v1.1"
 #define GAME_TITLE "TAILGUNNER"
+
+// Leaderboard configuration
+#define LEADERBOARD_GAME_ID 19
 
 // Gameplay tuning constants
 
