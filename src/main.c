@@ -134,8 +134,9 @@ int main(void)
 
         if (gameState == STATE_START)
         {
-            DrawText("TAILGUNNER", GetScreenWidth() / 2 - MeasureText("TAILGUNNER", 40) / 2, GetScreenHeight() / 2 - 40, 40, COLOR_TEXT_TITLE);
+            DrawText(GAME_TITLE, GetScreenWidth() / 2 - MeasureText(GAME_TITLE, 40) / 2, GetScreenHeight() / 2 - 40, 40, COLOR_TEXT_TITLE);
             DrawText("Press ENTER or CLICK to Start", GetScreenWidth() / 2 - MeasureText("Press ENTER or CLICK to Start", 20) / 2, GetScreenHeight() / 2 + 20, 20, COLOR_TEXT_SUBTITLE);
+            DrawText(GAME_VERSION, 10, GetScreenHeight() - 20, 12, COLOR_TEXT_SUBTITLE);
         }
         else if (gameState == STATE_PLAYING)
         {

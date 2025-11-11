@@ -1,6 +1,10 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+// Version for display in title screen
+#define GAME_VERSION "v1.0"
+#define GAME_TITLE "TAILGUNNER"
+
 // Gameplay tuning constants
 
 // Number of enemies spawned per wave
