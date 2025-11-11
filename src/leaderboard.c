@@ -22,6 +22,7 @@
 
 #define MAX_SCORES 10
 
+#if !defined(PLATFORM_WEB)
 // Structure to hold memory for libcurl response
 typedef struct {
     char *memory;
@@ -46,6 +47,7 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
 
     return realsize;
 }
+#endif
 
 static void ParseUserScores(const char *data, size_t size, LeaderboardEntry *entries, bool *fetchedFlag, bool *fetchingFlag)
 {
@@ -201,6 +203,38 @@ void onUserScoresSuccess(emscripten_fetch_t *fetch) {
     printf("User scores fetched successfully.\n");
     ParseUserScores(fetch->data, fetch->numBytes, userTop10, &userScoresFetched, &userScoresFetching);
 }
+#else
+static const char* GetConfigPath()
+{
+    const char* homeDir = getenv("HOME");
+    if (homeDir == NULL) {
+        return ".tailgunner.conf";
+    }
+    static char path[256];
+    snprintf(path, sizeof(path), "%s/.tailgunner.conf", homeDir);
+    return path;
+}
+
+static void SavePlayerName(const char* name)
+{
+    FILE* f = fopen(GetConfigPath(), "w");
+    if (f != NULL) {
+        fputs(name, f);
+        fclose(f);
+    }
+}
+
+static void LoadPlayerName()
+{
+    FILE* f = fopen(GetConfigPath(), "r");
+    if (f != NULL) {
+        if (fgets(playerName, sizeof(playerName), f) != NULL) {
+            // remove newline character
+            playerName[strcspn(playerName, "\n")] = 0;
+        }
+        fclose(f);
+    }
+}
 #endif
 
 void InitLeaderboard()
@@ -221,6 +255,8 @@ void InitLeaderboard()
         playerName[MAX_NAME_LENGTH] = '\0';
         free(storedName);
     }
+#else
+    LoadPlayerName();
 #endif
 }
 
@@ -244,6 +280,8 @@ bool UpdateNameInput()
     {
 #if defined(PLATFORM_WEB)
         emscripten_local_storage_set_item_js(PLAYER_NAME_STORAGE_KEY, playerName);
+#else
+        SavePlayerName(playerName);
 #endif
         return true;
     }
