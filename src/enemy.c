@@ -11,6 +11,8 @@
 #include "raymath.h"
 #include "rlgl.h"
 
+#include <stdio.h>
+
 // No module-level globals: all enemy state lives inside EnemyManager passed by callers
 
 //----------------------------------------------------------------------------------
@@ -98,47 +100,48 @@ void InitEnemies(EnemyManager* mgr)
 
 //----------------------------------------------------------------------------------
 // SpawnWave - Implementation Notes:
-// - Finds inactive enemies to reuse
+// - Enemies are all inactive before calling
 // - Assigns random but controlled Bezier curve paths
 // - Alternates enemies between left/right approach paths
 // - Staggers enemy positions with z-offset
 //----------------------------------------------------------------------------------
 void SpawnWave(EnemyManager* mgr, int wave)
 {
-    int waveSize = WAVE_SIZE;
-    int enemyIndex[waveSize];
-    int found = 0;
 
-    // Find enough inactive enemies for a wave
-    for (int i = 0; i < WAVE_SIZE && found < waveSize; i++)
+    for (int i = 0; i < WAVE_SIZE; i++)
     {
-        if (!mgr->enemies[i].active)
-        {
-            enemyIndex[found] = i;
-            found++;
+        Enemy* e = &mgr->enemies[i];
+        e->active = true;
+        e->state = ENEMY_STATE_NORMAL;
+        e->t = 0.0f;
+        e->rotationAngle = 0.0f;
+        e->rotationAxis = (Vector3){ 0.0f, 1.0f, 0.0f };
+
+        float zOffset = i * ENEMY_Z_OFFSET;
+        int side = (i % 2 == 0) ? 1 : -1;
+        int r0x = GetRandomValue(-ENEMY_XY_START_RANGE, ENEMY_XY_START_RANGE);
+        int r0y = GetRandomValue(-ENEMY_XY_START_RANGE, ENEMY_XY_START_RANGE);
+
+        e->p0 = (Vector3){ (float)r0x,                             (float)r0y,                     -100.0f - zOffset };
+        e->p1 = (Vector3){ (float)GetRandomValue(-5, 5),           (float)GetRandomValue(-5, 5),    -50.0f - zOffset/2.0f };
+        e->p2 = (Vector3){ (float)GetRandomValue(-40, -20) * side, (float)GetRandomValue(10, 20),   -25.0f };
+        e->p3 = (Vector3){ (float)GetRandomValue(20, 40) * side,   (float)GetRandomValue(-20, -10),  10.0f };
+
+        // Apply wave-based nerfing of enemies
+        // waves count from 1,2,3,...
+        if (wave <= WAVE_NERF2_LEVELS) {
+            if(i >= WAVE_SIZE - 2) {
+                printf("Nerfing enemy at index %d for wave %d\n", i, wave);
+                e->active = false;
+            }
+        } else if (wave <= WAVE_NERF1_LEVELS) {
+            if(i >= WAVE_SIZE - 1) {
+                printf("Nerfing enemy at index %d for wave %d\n", i, wave);
+                e->active = false;
+            }
         }
     }
-
-    if (found == waveSize)
-    {
-        for (int i = 0; i < waveSize; i++)
-        {
-            Enemy* e = &mgr->enemies[enemyIndex[i]];
-            e->active = true;
-            e->state = ENEMY_STATE_NORMAL;
-            e->t = 0.0f;
-            e->rotationAngle = 0.0f;
-            e->rotationAxis = (Vector3){ 0.0f, 1.0f, 0.0f };
-
-            float zOffset = i * -10.0f;
-            int side = (i % 2 == 0) ? 1 : -1;
-
-            e->p0 = (Vector3){ (float)GetRandomValue(-20, 20), (float)GetRandomValue(-20, 20), -100.0f + zOffset };
-            e->p1 = (Vector3){ (float)GetRandomValue(-5, 5), (float)GetRandomValue(-5, 5), -50.0f + zOffset };
-            e->p2 = (Vector3){ (float)GetRandomValue(-40, -20) * side, (float)GetRandomValue(10, 20), -25.0f };
-            e->p3 = (Vector3){ (float)GetRandomValue(20, 40) * side, (float)GetRandomValue(-20, -10), 10.0f };
-        }
-    }
+    
 }
 
 //----------------------------------------------------------------------------------
