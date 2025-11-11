@@ -7,6 +7,12 @@
 
 #define BASE_LEADERBOARD_URL "https://geraldburke.com/apis/simple-leaderboard-api/"
 
+// TODO:
+// - [ ] Check User Scores prior to pushing them so we don't put in duplicates.
+// - [ ] Show Current User Top Score when it doesn't appear on the Global Top Scores list.
+// - [ ] Get working on Linux.
+// - [ ] Implement structures, not global state.
+
 #if defined(PLATFORM_WEB)
 #include <emscripten/emscripten.h>
 #include <emscripten/fetch.h>
@@ -184,14 +190,14 @@ void DrawNameInput()
 
     for (int i = 0; i < MAX_NAME_LENGTH; i++)
     {
-        DrawRectangleRec(charBoxes[i], LIGHTGRAY);
-        DrawText(TextFormat("%c", playerName[i]), charBoxes[i].x + 12, charBoxes[i].y + 5, 30, BLACK);
-        DrawTriangle((Vector2){ upArrows[i].x + 20, upArrows[i].y }, (Vector2){ upArrows[i].x, upArrows[i].y + 20 }, (Vector2){ upArrows[i].x + 40, upArrows[i].y + 20 }, MAROON);
-        DrawTriangle((Vector2){ downArrows[i].x + 20, downArrows[i].y + 20 }, (Vector2){ downArrows[i].x + 40, downArrows[i].y }, (Vector2){ downArrows[i].x, downArrows[i].y }, MAROON);
+        DrawRectangleRec(charBoxes[i], COLOR_INITIAL_BOX);
+        DrawText(TextFormat("%c", playerName[i]), charBoxes[i].x + 12, charBoxes[i].y + 5, 30, COLOR_BACKGROUND);
+        DrawTriangle((Vector2){ upArrows[i].x + 20, upArrows[i].y }, (Vector2){ upArrows[i].x, upArrows[i].y + 20 }, (Vector2){ upArrows[i].x + 40, upArrows[i].y + 20 }, COLOR_INITIAL_BOX);
+        DrawTriangle((Vector2){ downArrows[i].x + 20, downArrows[i].y + 20 }, (Vector2){ downArrows[i].x + 40, downArrows[i].y }, (Vector2){ downArrows[i].x, downArrows[i].y }, COLOR_INITIAL_BOX);
     }
 
-    DrawRectangleRec(submitButton, LIME);
-    DrawText("Submit", submitButton.x + 30, submitButton.y + 5, 20, BLACK);
+    DrawRectangleRec(submitButton, COLOR_INITIAL_BOX);
+    DrawText("Submit", submitButton.x + 30, submitButton.y + 5, 20, COLOR_BACKGROUND);
 }
 
 void SubmitScore(int score)
@@ -312,7 +318,7 @@ void DrawLeaderboard()
             {
                 DrawText(TextFormat("%d. %s - %d", i + 1, globalTop10[i].name, globalTop10[i].score),
                          GetScreenWidth() / 2 - MeasureText(TextFormat("%d. %s - %d", i + 1, globalTop10[i].name, globalTop10[i].score), 20) / 2,
-                         startY + (i + 1) * lineHeight, 20, WHITE);
+                         startY + (i + 1) * lineHeight, 20, COLOR_TEXT_LEADERBOARD);
             }
         }
 
@@ -332,7 +338,7 @@ void DrawLeaderboard()
             DrawText("YOUR BEST SCORE", GetScreenWidth() / 2 - MeasureText("YOUR BEST SCORE", 25) / 2, startY + (MAX_SCORES + 2) * lineHeight, 25, COLOR_TEXT_SUBTITLE);
             DrawText(TextFormat("%s - %d", userTop10[0].name, userTop10[0].score),
                      GetScreenWidth() / 2 - MeasureText(TextFormat("%s - %d", userTop10[0].name, userTop10[0].score), 20) / 2,
-                     startY + (MAX_SCORES + 3) * lineHeight, 20, YELLOW);
+                     startY + (MAX_SCORES + 3) * lineHeight, 20, COLOR_TEXT_SUBTITLE);
         }
 
         DrawText("Press ENTER to continue", GetScreenWidth() / 2 - MeasureText("Press ENTER to continue", 20) / 2, GetScreenHeight() - 50, 20, COLOR_TEXT_SUBTITLE);

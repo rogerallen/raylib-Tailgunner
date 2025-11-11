@@ -47,6 +47,7 @@
 #define COLOR_TEXT_WAVE                  YELLOW
 #define COLOR_TEXT_GAMEOVER              RED
 #define COLOR_TEXT_FINAL_SCORE           GREEN
+#define COLOR_TEXT_LEADERBOARD           ?
 #define COLOR_CROSSHAIR_CIRCLE           MAROON
 #define COLOR_CROSSHAIR_LINES            RED
 #define COLOR_LASER                      RED
@@ -55,6 +56,7 @@
 #define COLOR_FORCEFIELD_GRID            LIME
 #define COLOR_FORCEFIELD_UI_READY        GREEN
 #define COLOR_FORCEFIELD_UI_CHARGING     YELLOW
+#define COLOR_INITIAL_BOX                ?
 #else
 #define VGREEN CLITERAL(Color){ 0x30, 0xf0, 0xe0, 0xff }
 #define COLOR_BACKGROUND                 BLACK
@@ -65,6 +67,7 @@
 #define COLOR_TEXT_WAVE                  VGREEN
 #define COLOR_TEXT_GAMEOVER              VGREEN
 #define COLOR_TEXT_FINAL_SCORE           VGREEN
+#define COLOR_TEXT_LEADERBOARD           VGREEN
 #define COLOR_CROSSHAIR_CIRCLE           VGREEN
 #define COLOR_CROSSHAIR_LINES            VGREEN
 #define COLOR_LASER                      VGREEN
@@ -73,6 +76,7 @@
 #define COLOR_FORCEFIELD_GRID            VGREEN
 #define COLOR_FORCEFIELD_UI_READY        VGREEN
 #define COLOR_FORCEFIELD_UI_CHARGING     VGREEN
+#define COLOR_INITIAL_BOX                VGREEN
 #endif
 
 
