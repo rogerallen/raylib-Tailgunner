@@ -8,7 +8,7 @@
 // Leaderboard configuration
 // Game ID is 19 for Tailgunner, 21 for TailgunnerProd(uction)
 // !!! Set to 21 for production releases !!!
-#define LEADERBOARD_GAME_ID 19
+#define LEADERBOARD_GAME_ID 21
 #define LEADERBOARD_BASE_URL "https://geraldburke.com/apis/simple-leaderboard-api/"
 #define LEADERBOARD_MAX_SCORES 10
 #define LEADERBOARD_NAME_LENGTH 3
