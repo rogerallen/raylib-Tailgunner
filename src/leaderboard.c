@@ -4,6 +4,7 @@
 #include "cJSON.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h> // For malloc, realloc, free
 
 #if defined(PLATFORM_WEB)
 #include <emscripten/emscripten.h>
@@ -12,15 +13,89 @@
 #else
 #include <curl/curl.h>
 #endif
-#include <stdlib.h> // For malloc, realloc, free
 
+// Internal function declarations
 
-// TODO:
-// - [ ] Check User Scores prior to pushing them so we don't put in duplicates.
-// - [ ] Implement structures, not global state.
+static void FetchGlobalTop10();
+static void FetchUserTop10(const char* name);
 
+static void RequestLeaderboardUpdate();
 
-#if !defined(PLATFORM_WEB)
+static void ParseUserScores(const char *data, size_t size, LeaderboardEntry *entries, bool *fetchedFlag, bool *fetchingFlag);
+static void ParseGlobalScores(const char *data, size_t size, LeaderboardEntry *entries, bool *fetchedFlag, bool *fetchingFlag);
+
+// TODO: Implement structures, not global state.
+
+static LeaderboardEntry globalTop10[LEADERBOARD_MAX_SCORES];
+static LeaderboardEntry userTop10[LEADERBOARD_MAX_SCORES];
+static char playerName[LEADERBOARD_NAME_LENGTH + 1] = { 'A', 'A', 'A', '\0' };
+
+static bool isLeaderboardActive = false;
+static bool scoreSubmitted = false;
+static bool globalScoresFetched = false;
+static bool userScoresFetched = false;
+static bool globalScoresFetching = false;
+static bool userScoresFetching = false;
+static bool requestLeaderboardUpdate = false;
+
+static Rectangle upArrows[LEADERBOARD_NAME_LENGTH];
+static Rectangle downArrows[LEADERBOARD_NAME_LENGTH];
+static Rectangle charBoxes[LEADERBOARD_NAME_LENGTH];
+static Rectangle submitButton;
+
+#if defined(PLATFORM_WEB)
+#define PLAYER_NAME_STORAGE_KEY "tailgunner_player_name"
+
+EM_JS(char*, emscripten_local_storage_get_item_js, (const char* key_ptr), {
+  var key = UTF8ToString(key_ptr);
+  var value = localStorage.getItem(key);
+  if (value === null) {
+    return 0; // Return null pointer if item not found
+  }
+  var length = lengthBytesUTF8(value) + 1;
+  var value_ptr = _malloc(length);
+  stringToUTF8(value, value_ptr, length);
+  return value_ptr;
+});
+
+EM_JS(int, emscripten_local_storage_set_item_js, (const char* key_ptr, const char* value_ptr), {
+  var key = UTF8ToString(key_ptr);
+  var value = UTF8ToString(value_ptr);
+  try {
+    localStorage.setItem(key, value);
+    return 0; // Success
+  } catch (e) {
+    return 1; // Failure
+  }
+});
+
+static void onSubmitSuccess(emscripten_fetch_t *fetch) {
+    printf("Score submitted successfully.\n");
+    scoreSubmitted = true;
+    emscripten_fetch_close(fetch);
+    RequestLeaderboardUpdate();
+}
+
+static void onFetchFailure(emscripten_fetch_t *fetch) {
+    printf("Failed to fetch data: %s\n", fetch->statusText);
+    if (strcmp(fetch->url + strlen(fetch->url) - 8, "topScores") == 0) {
+        globalScoresFetching = false;
+    } else {
+        userScoresFetching = false;
+    }
+    emscripten_fetch_close(fetch);
+}
+
+static void onGlobalScoresSuccess(emscripten_fetch_t *fetch) {
+    printf("Global scores fetched successfully.\n");
+    ParseGlobalScores(fetch->data, fetch->numBytes, globalTop10, &globalScoresFetched, &globalScoresFetching);
+}
+
+static void onUserScoresSuccess(emscripten_fetch_t *fetch) {
+    printf("User scores fetched successfully.\n");
+    ParseUserScores(fetch->data, fetch->numBytes, userTop10, &userScoresFetched, &userScoresFetching);
+}
+#else
 // Structure to hold memory for libcurl response
 typedef struct {
     char *memory;
@@ -102,6 +177,17 @@ static bool CurlPerformNoWrite(const char *url)
     curl_global_cleanup();
 
     return (res == CURLE_OK);
+}
+
+static const char* GetConfigPath()
+{
+    const char* homeDir = getenv("HOME");
+    if (homeDir == NULL) {
+        return ".tailgunner.conf";
+    }
+    static char path[256];
+    snprintf(path, sizeof(path), "%s/.tailgunner.conf", homeDir);
+    return path;
 }
 #endif
 
@@ -195,121 +281,21 @@ static void ParseGlobalScores(const char *data, size_t size, LeaderboardEntry *e
     *fetchingFlag = false;
 }
 
-#if defined(PLATFORM_WEB)
-EM_JS(char*, emscripten_local_storage_get_item_js, (const char* key_ptr), {
-  var key = UTF8ToString(key_ptr);
-  var value = localStorage.getItem(key);
-  if (value === null) {
-    return 0; // Return null pointer if item not found
-  }
-  var length = lengthBytesUTF8(value) + 1;
-  var value_ptr = _malloc(length);
-  stringToUTF8(value, value_ptr, length);
-  return value_ptr;
-});
-
-EM_JS(int, emscripten_local_storage_set_item_js, (const char* key_ptr, const char* value_ptr), {
-  var key = UTF8ToString(key_ptr);
-  var value = UTF8ToString(value_ptr);
-  try {
-    localStorage.setItem(key, value);
-    return 0; // Success
-  } catch (e) {
-    return 1; // Failure
-  }
-});
-#endif
-
-#define PLAYER_NAME_STORAGE_KEY "tailgunner_player_name"
-
-static LeaderboardEntry globalTop10[LEADERBOARD_MAX_SCORES];
-static LeaderboardEntry userTop10[LEADERBOARD_MAX_SCORES];
-static char playerName[LEADERBOARD_NAME_LENGTH + 1] = { 'A', 'A', 'A', '\0' };
-
-static bool isLeaderboardActive = false;
-static bool scoreSubmitted = false;
-static bool globalScoresFetched = false;
-static bool userScoresFetched = false;
-static bool globalScoresFetching = false;
-static bool userScoresFetching = false;
-static bool requestLeaderboardUpdate = false;
-
-static Rectangle upArrows[LEADERBOARD_NAME_LENGTH];
-static Rectangle downArrows[LEADERBOARD_NAME_LENGTH];
-static Rectangle charBoxes[LEADERBOARD_NAME_LENGTH];
-static Rectangle submitButton;
-
-#if defined(PLATFORM_WEB)
-void onSubmitSuccess(emscripten_fetch_t *fetch) {
-    printf("Score submitted successfully.\n");
-    scoreSubmitted = true;
-    emscripten_fetch_close(fetch);
-    RequestLeaderboardUpdate();
-}
-
-void onFetchFailure(emscripten_fetch_t *fetch) {
-    printf("Failed to fetch data: %s\n", fetch->statusText);
-    if (strcmp(fetch->url + strlen(fetch->url) - 8, "topScores") == 0) {
-        globalScoresFetching = false;
-    } else {
-        userScoresFetching = false;
-    }
-    emscripten_fetch_close(fetch);
-}
-
-void onGlobalScoresSuccess(emscripten_fetch_t *fetch) {
-    printf("Global scores fetched successfully.\n");
-    ParseGlobalScores(fetch->data, fetch->numBytes, globalTop10, &globalScoresFetched, &globalScoresFetching);
-}
-
-void onUserScoresSuccess(emscripten_fetch_t *fetch) {
-    printf("User scores fetched successfully.\n");
-    ParseUserScores(fetch->data, fetch->numBytes, userTop10, &userScoresFetched, &userScoresFetching);
-}
-#else
-static const char* GetConfigPath()
-{
-    const char* homeDir = getenv("HOME");
-    if (homeDir == NULL) {
-        return ".tailgunner.conf";
-    }
-    static char path[256];
-    snprintf(path, sizeof(path), "%s/.tailgunner.conf", homeDir);
-    return path;
-}
-
 static void SavePlayerName(const char* name)
 {
+#if defined(PLATFORM_WEB)
+    emscripten_local_storage_set_item_js(PLAYER_NAME_STORAGE_KEY, playerName);
+#else
     FILE* f = fopen(GetConfigPath(), "w");
     if (f != NULL) {
         fputs(name, f);
         fclose(f);
     }
+#endif
 }
 
 static void LoadPlayerName()
 {
-    FILE* f = fopen(GetConfigPath(), "r");
-    if (f != NULL) {
-        if (fgets(playerName, sizeof(playerName), f) != NULL) {
-            // remove newline character
-            playerName[strcspn(playerName, "\n")] = 0;
-        }
-        fclose(f);
-    }
-}
-#endif
-
-void InitLeaderboard()
-{
-    for (int i = 0; i < LEADERBOARD_NAME_LENGTH; i++)
-    {
-        charBoxes[i] = (Rectangle){ GetScreenWidth() / 2 - 70 + i * 50, GetScreenHeight() / 2 - 20, 40, 40 };
-        upArrows[i] = (Rectangle){ charBoxes[i].x, charBoxes[i].y - 30, 40, 20 };
-        downArrows[i] = (Rectangle){ charBoxes[i].x, charBoxes[i].y + 50, 40, 20 };
-    }
-    submitButton = (Rectangle){ GetScreenWidth() / 2 - 60, GetScreenHeight() / 2 + 80, 120, 30 };
-
 #if defined(PLATFORM_WEB)
     char *storedName = emscripten_local_storage_get_item_js(PLAYER_NAME_STORAGE_KEY);
     if (storedName != NULL)
@@ -319,80 +305,18 @@ void InitLeaderboard()
         free(storedName);
     }
 #else
-    LoadPlayerName();
-#endif
-}
-
-bool UpdateNameInput()
-{
-    for (int i = 0; i < LEADERBOARD_NAME_LENGTH; i++)
-    {
-        if (CheckCollisionPointRec(GetMousePosition(), upArrows[i]) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-        {
-            playerName[i]++;
-            if (playerName[i] > 'Z') playerName[i] = 'A';
+    FILE* f = fopen(GetConfigPath(), "r");
+    if (f != NULL) {
+        if (fgets(playerName, sizeof(playerName), f) != NULL) {
+            // remove newline character
+            playerName[strcspn(playerName, "\n")] = 0;
         }
-        if (CheckCollisionPointRec(GetMousePosition(), downArrows[i]) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-        {
-            playerName[i]--;
-            if (playerName[i] < 'A') playerName[i] = 'Z';
-        }
-    }
-
-    if (CheckCollisionPointRec(GetMousePosition(), submitButton) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-    {
-#if defined(PLATFORM_WEB)
-        emscripten_local_storage_set_item_js(PLAYER_NAME_STORAGE_KEY, playerName);
-#else
-        SavePlayerName(playerName);
-#endif
-        return true;
-    }
-    return false;
-}
-
-void DrawNameInput()
-{
-    DrawText("Enter Your Initials", GetScreenWidth() / 2 - MeasureText("Enter Your Initials", 30) / 2, GetScreenHeight() / 2 - 100, 30, COLOR_TEXT_TITLE);
-
-    for (int i = 0; i < LEADERBOARD_NAME_LENGTH; i++)
-    {
-        DrawRectangleRec(charBoxes[i], COLOR_INITIAL_BOX);
-        DrawText(TextFormat("%c", playerName[i]), charBoxes[i].x + 12, charBoxes[i].y + 5, 30, COLOR_BACKGROUND);
-        DrawTriangle((Vector2){ upArrows[i].x + 20, upArrows[i].y }, (Vector2){ upArrows[i].x, upArrows[i].y + 20 }, (Vector2){ upArrows[i].x + 40, upArrows[i].y + 20 }, COLOR_INITIAL_BOX);
-        DrawTriangle((Vector2){ downArrows[i].x + 20, downArrows[i].y + 20 }, (Vector2){ downArrows[i].x + 40, downArrows[i].y }, (Vector2){ downArrows[i].x, downArrows[i].y }, COLOR_INITIAL_BOX);
-    }
-
-    DrawRectangleRec(submitButton, COLOR_INITIAL_BOX);
-    DrawText("Submit", submitButton.x + 30, submitButton.y + 5, 20, COLOR_BACKGROUND);
-}
-
-void SubmitScore(int score)
-{
-    char url[256];
-    sprintf(url, "%s?action=newScore&gameID=%d&userName=%s&score=%d", LEADERBOARD_BASE_URL, LEADERBOARD_GAME_ID, playerName, score);
-
-#if defined(PLATFORM_WEB)
-    emscripten_fetch_attr_t attr;
-    emscripten_fetch_attr_init(&attr);
-    strcpy(attr.requestMethod, "POST");
-    attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
-    attr.onsuccess = onSubmitSuccess;
-    attr.onerror = onFetchFailure;
-
-    emscripten_fetch(&attr, url);
-#else
-    if (!CurlPerformNoWrite(url)) {
-        fprintf(stderr, "Score submission failed for URL: %s\n", url);
-    } else {
-        printf("Score submitted successfully.\n");
-        scoreSubmitted = true;
-        RequestLeaderboardUpdate();
+        fclose(f);
     }
 #endif
 }
 
-void FetchGlobalTop10()
+static void FetchGlobalTop10()
 {
     char url[256];
     sprintf(url, "%s?action=topScores&gameID=%d", LEADERBOARD_BASE_URL, LEADERBOARD_GAME_ID);  // &count=10 is default
@@ -425,7 +349,7 @@ void FetchGlobalTop10()
 #endif
 }
 
-void FetchUserTop10(const char* name)
+static void FetchUserTop10(const char* name)
 {
     char url[256];
     sprintf(url, "%s?action=userScores&gameID=%d&userName=%s", LEADERBOARD_BASE_URL, LEADERBOARD_GAME_ID, name);  // &count=10 is default
@@ -458,37 +382,14 @@ void FetchUserTop10(const char* name)
 #endif
 }
 
-void UpdateLeaderboard(int *gameState, int score)
-{
-    if (!isLeaderboardActive) return;
-
-    if (requestLeaderboardUpdate)
-    {
-        ResetLeaderboardFlags();
-        requestLeaderboardUpdate = false;
-    }
-
-    if (!globalScoresFetched && !globalScoresFetching) FetchGlobalTop10();
-    if (!userScoresFetched && !userScoresFetching) FetchUserTop10(playerName);
-
-    if (IsKeyPressed(KEY_ENTER) || IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-    {
-        SetLeaderboardActive(false);
-        *gameState = STATE_START;
-    }
-}
-
-void ResetLeaderboardFlags()
-{
-    scoreSubmitted = false;
-    globalScoresFetched = false;
-    userScoresFetched = false;
-}
-
-void RequestLeaderboardUpdate()
+static void RequestLeaderboardUpdate()
 {
     requestLeaderboardUpdate = true;
 }
+
+// ================================================================================
+// Public functions
+// ================================================================================
 
 void DrawLeaderboard()
 {
@@ -539,12 +440,112 @@ void DrawLeaderboard()
     }
 }
 
-bool IsLeaderboardActive()
+void DrawNameInput()
 {
-    return isLeaderboardActive;
+    DrawText("Enter Your Initials", GetScreenWidth() / 2 - MeasureText("Enter Your Initials", 30) / 2, GetScreenHeight() / 2 - 100, 30, COLOR_TEXT_TITLE);
+
+    for (int i = 0; i < LEADERBOARD_NAME_LENGTH; i++)
+    {
+        DrawRectangleRec(charBoxes[i], COLOR_INITIAL_BOX);
+        DrawText(TextFormat("%c", playerName[i]), charBoxes[i].x + 12, charBoxes[i].y + 5, 30, COLOR_BACKGROUND);
+        DrawTriangle((Vector2){ upArrows[i].x + 20, upArrows[i].y }, (Vector2){ upArrows[i].x, upArrows[i].y + 20 }, (Vector2){ upArrows[i].x + 40, upArrows[i].y + 20 }, COLOR_INITIAL_BOX);
+        DrawTriangle((Vector2){ downArrows[i].x + 20, downArrows[i].y + 20 }, (Vector2){ downArrows[i].x + 40, downArrows[i].y }, (Vector2){ downArrows[i].x, downArrows[i].y }, COLOR_INITIAL_BOX);
+    }
+
+    DrawRectangleRec(submitButton, COLOR_INITIAL_BOX);
+    DrawText("Submit", submitButton.x + 30, submitButton.y + 5, 20, COLOR_BACKGROUND);
+}
+
+void InitLeaderboard()
+{
+    for (int i = 0; i < LEADERBOARD_NAME_LENGTH; i++)
+    {
+        charBoxes[i] = (Rectangle){ GetScreenWidth() / 2 - 70 + i * 50, GetScreenHeight() / 2 - 20, 40, 40 };
+        upArrows[i] = (Rectangle){ charBoxes[i].x, charBoxes[i].y - 30, 40, 20 };
+        downArrows[i] = (Rectangle){ charBoxes[i].x, charBoxes[i].y + 50, 40, 20 };
+    }
+    submitButton = (Rectangle){ GetScreenWidth() / 2 - 60, GetScreenHeight() / 2 + 80, 120, 30 };
+    LoadPlayerName();
+}
+
+void ResetLeaderboardFlags()
+{
+    scoreSubmitted = false;
+    globalScoresFetched = false;
+    userScoresFetched = false;
 }
 
 void SetLeaderboardActive(bool active)
 {
     isLeaderboardActive = active;
 }
+
+void SubmitScore(int score)
+{
+    char url[256];
+    sprintf(url, "%s?action=newScore&gameID=%d&userName=%s&score=%d", LEADERBOARD_BASE_URL, LEADERBOARD_GAME_ID, playerName, score);
+
+#if defined(PLATFORM_WEB)
+    emscripten_fetch_attr_t attr;
+    emscripten_fetch_attr_init(&attr);
+    strcpy(attr.requestMethod, "POST");
+    attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
+    attr.onsuccess = onSubmitSuccess;
+    attr.onerror = onFetchFailure;
+
+    emscripten_fetch(&attr, url);
+#else
+    if (!CurlPerformNoWrite(url)) {
+        fprintf(stderr, "Score submission failed for URL: %s\n", url);
+    } else {
+        printf("Score submitted successfully.\n");
+        scoreSubmitted = true;
+        RequestLeaderboardUpdate();
+    }
+#endif
+}
+
+void UpdateLeaderboard(int *gameState, int score)
+{
+    if (!isLeaderboardActive) return;
+
+    if (requestLeaderboardUpdate)
+    {
+        ResetLeaderboardFlags();
+        requestLeaderboardUpdate = false;
+    }
+
+    if (!globalScoresFetched && !globalScoresFetching) FetchGlobalTop10();
+    if (!userScoresFetched && !userScoresFetching) FetchUserTop10(playerName);
+
+    if (IsKeyPressed(KEY_ENTER) || IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+    {
+        SetLeaderboardActive(false);
+        *gameState = STATE_START;
+    }
+}
+
+bool UpdateNameInput()
+{
+    for (int i = 0; i < LEADERBOARD_NAME_LENGTH; i++)
+    {
+        if (CheckCollisionPointRec(GetMousePosition(), upArrows[i]) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
+            playerName[i]++;
+            if (playerName[i] > 'Z') playerName[i] = 'A';
+        }
+        if (CheckCollisionPointRec(GetMousePosition(), downArrows[i]) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
+            playerName[i]--;
+            if (playerName[i] < 'A') playerName[i] = 'Z';
+        }
+    }
+
+    if (CheckCollisionPointRec(GetMousePosition(), submitButton) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+    {
+        SavePlayerName(playerName);
+        return true;
+    }
+    return false;
+}
+

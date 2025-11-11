@@ -9,16 +9,15 @@ typedef struct {
     int score;
 } LeaderboardEntry;
 
-void InitLeaderboard();
-void UpdateLeaderboard(int *gameState, int score);
+// Public Functions
+
 void DrawLeaderboard();
-
-void FetchGlobalTop10();
-void FetchUserTop10(const char* name);
-
-bool IsLeaderboardActive();
-void SetLeaderboardActive(bool active);
+void DrawNameInput();
+void InitLeaderboard();
 void ResetLeaderboardFlags();
-void RequestLeaderboardUpdate();
+void SetLeaderboardActive(bool active);
+void SubmitScore(int score);
+void UpdateLeaderboard(int *gameState, int score);
+bool UpdateNameInput();
 
 #endif // LEADERBOARD_H

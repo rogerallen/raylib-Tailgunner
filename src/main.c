@@ -1,5 +1,3 @@
-#include "leaderboard.h"
-#include "leaderboard.h"
 #include "raylib.h"
 #if defined(PLATFORM_WEB)
 #include <emscripten/emscripten.h>
@@ -9,15 +7,10 @@
 #include "starfield.h"
 #include "laser.h"
 #include "forcefield.h"
+#include "leaderboard.h"
 #include "config.h"
 #include <stdio.h>
 
-// Explicit prototypes for leaderboard functions (Workaround)
-bool UpdateNameInput();
-void DrawNameInput();
-void SubmitScore(int score);
-void UpdateLeaderboard(int *gameState, int score);
-void SetLeaderboardActive(bool active);
 
 //----------------------------------------------------------------------------------
 // main.c - Game entry and orchestration
