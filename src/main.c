@@ -71,6 +71,7 @@ int main(void)
     Sound forceFieldSound = LoadSound("resources/forcefield.wav");
     Sound forceFailSound = LoadSound("resources/forcefail.wav");
     Sound forceFieldHitSound = LoadSound("resources/bounce.wav");
+    Sound lostLifeSound = LoadSound("resources/past.wav");
 
     int frameCount = 0;
     int touch_count_last_frame = 0;
@@ -116,15 +117,21 @@ int main(void)
 
                 UpdateLasers(&laserMgr);
                 UpdateStarfield();
+                int curLives = lives;
                 UpdateEnemies(&enemyMgr, &lives, &wave);
                 bool ffHit = UpdateForceField(&ffMgr, &enemyMgr);
                 if (ffHit) PlaySound(forceFieldHitSound);
 
+                if (curLives > lives) {
+                    // Lost a life this frame
+                    PlaySound(lostLifeSound);
+                }
+                
                 if (lives <= 0)
                 {
                     gameState = STATE_GAME_OVER;
                     ShowCursor();
-                }
+                }   
 
             } break;
             case STATE_GAME_OVER:

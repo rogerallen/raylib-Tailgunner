@@ -125,7 +125,7 @@ void SpawnWave(EnemyManager* mgr, int wave)
         e->p0 = (Vector3){ (float)r0x,                             (float)r0y,                     -100.0f - zOffset };
         e->p1 = (Vector3){ (float)GetRandomValue(-5, 5),           (float)GetRandomValue(-5, 5),    -50.0f - zOffset/2.0f };
         e->p2 = (Vector3){ (float)GetRandomValue(-40, -20) * side, (float)GetRandomValue(10, 20),   -25.0f };
-        e->p3 = (Vector3){ (float)GetRandomValue(20, 40) * side,   (float)GetRandomValue(-20, -10),  10.0f };
+        e->p3 = (Vector3){ (float)GetRandomValue(20, 40) * side,   (float)GetRandomValue(-20, -10),  1.0f };
 
         // Apply wave-based nerfing of enemies
         // waves count from 1,2,3,...
