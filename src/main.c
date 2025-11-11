@@ -7,8 +7,10 @@
 #include "starfield.h"
 #include "laser.h"
 #include "forcefield.h"
+#include "leaderboard.h"
 #include "config.h"
 #include <stdio.h>
+
 
 //----------------------------------------------------------------------------------
 // main.c - Game entry and orchestration
@@ -22,7 +24,7 @@
 // - Delegates gameplay logic to subsystem modules
 //----------------------------------------------------------------------------------
 
-void InitGame(int* score, int* lives, int* wave, struct LaserManager* lmgr, struct EnemyManager* emgr, struct ForceFieldManager* ffmgr);
+void InitGame(int* score, int* lives, int* wave, struct LaserManager* lmgr, struct EnemyManager* emgr, struct ForceFieldManager* ffmgr, struct LeaderboardManager* lbmgr);
 
 //----------------------------------------------------------------------------------
 // main - Implementation Notes:
@@ -51,6 +53,7 @@ int main(void)
     int score = 0;
     int lives = 0;
     int wave = 0;
+    bool nameRequired = true;
 
     // Encapsulated managers (avoid globals)
     LaserManager laserMgr = { 0 };
@@ -59,11 +62,16 @@ int main(void)
 
     InitAudioDevice();
 
+    // Leaderboard manager (avoid globals)
+    LeaderboardManager lbMgr = { 0 };
+    InitLeaderboard(&lbMgr);
+
     Sound shootSound = LoadSound("resources/shoot.wav");
     Sound explosionSound = LoadSound("resources/explosion.wav");
     Sound forceFieldSound = LoadSound("resources/forcefield.wav");
     Sound forceFailSound = LoadSound("resources/forcefail.wav");
     Sound forceFieldHitSound = LoadSound("resources/bounce.wav");
+    Sound lostLifeSound = LoadSound("resources/past.wav");
 
     int frameCount = 0;
     int touch_count_last_frame = 0;
@@ -77,7 +85,7 @@ int main(void)
             {
                 if (IsKeyPressed(KEY_ENTER) || IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
                 {
-                    InitGame(&score, &lives, &wave, &laserMgr, &enemyMgr, &ffMgr);
+                    InitGame(&score, &lives, &wave, &laserMgr, &enemyMgr, &ffMgr, &lbMgr);
                     gameState = STATE_PLAYING;
                     HideCursor();
                 }
@@ -109,23 +117,57 @@ int main(void)
 
                 UpdateLasers(&laserMgr);
                 UpdateStarfield();
+                int curLives = lives;
                 UpdateEnemies(&enemyMgr, &lives, &wave);
                 bool ffHit = UpdateForceField(&ffMgr, &enemyMgr);
                 if (ffHit) PlaySound(forceFieldHitSound);
 
+                if (curLives > lives) {
+                    // Lost a life this frame
+                    PlaySound(lostLifeSound);
+                }
+                
                 if (lives <= 0)
                 {
                     gameState = STATE_GAME_OVER;
                     ShowCursor();
-                }
+                }   
 
             } break;
             case STATE_GAME_OVER:
             {
                 if (IsKeyPressed(KEY_ENTER) || IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
                 {
-                    gameState = STATE_START;
+                    if (nameRequired)
+                    {
+                        gameState = STATE_ENTER_NAME;
+                    }
+                    else
+                    {
+                        gameState = STATE_SUBMIT_SCORE;
+                    }
                 }
+            } break;
+            case STATE_ENTER_NAME:
+            {
+                // UpdateNameInput is in leaderboard.c
+                // It returns true when the name is submitted
+                if (UpdateNameInput(&lbMgr))
+                {
+                    nameRequired = false;
+                    gameState = STATE_SUBMIT_SCORE;
+                }
+            } break;
+            case STATE_SUBMIT_SCORE:
+            {
+                SubmitScore(&lbMgr, score);
+                ResetLeaderboardFlags(&lbMgr);
+                gameState = STATE_LEADERBOARD;
+                SetLeaderboardActive(&lbMgr, true);
+            } break;
+            case STATE_LEADERBOARD:
+            {
+                UpdateLeaderboard(&lbMgr, (int *)&gameState, score);
             } break;
         }
 
@@ -160,8 +202,17 @@ int main(void)
         {
             DrawText("GAME OVER", GetScreenWidth() / 2 - MeasureText("GAME OVER", 40) / 2, GetScreenHeight() / 2 - 40, 40, COLOR_TEXT_GAMEOVER);
             DrawText(TextFormat("Final Score: %i", score), GetScreenWidth() / 2 - MeasureText(TextFormat("Final Score: %i", score), 20) / 2, GetScreenHeight() / 2 + 20, 20, COLOR_TEXT_FINAL_SCORE);
-            DrawText("Press ENTER or CLICK to Return to Start", GetScreenWidth() / 2 - MeasureText("Press ENTER or CLICK to Return to Start", 20) / 2, GetScreenHeight() / 2 + 60, 20, COLOR_TEXT_SUBTITLE);
+            DrawText("Press ENTER or CLICK to Continue", GetScreenWidth() / 2 - MeasureText("Press ENTER or CLICK to Continue", 20) / 2, GetScreenHeight() / 2 + 60, 20, COLOR_TEXT_SUBTITLE);
         }
+        else if (gameState == STATE_ENTER_NAME)
+        {
+            DrawNameInput(&lbMgr);
+        }
+        else if (gameState == STATE_LEADERBOARD)
+        {
+            DrawLeaderboard(&lbMgr);
+        }
+
 
         EndDrawing();
 
@@ -192,13 +243,14 @@ int main(void)
     return 0;
 }
 
+
 //----------------------------------------------------------------------------------
 // InitGame - Implementation Notes:
 // - Resets score, lives and wave to starting values
 // - Initializes all subsystems used by the gameplay loop
 // - Spawns initial enemy wave
 //----------------------------------------------------------------------------------
-void InitGame(int* score, int* lives, int* wave, struct LaserManager* lmgr, struct EnemyManager* emgr, struct ForceFieldManager* ffmgr)
+void InitGame(int* score, int* lives, int* wave, struct LaserManager* lmgr, struct EnemyManager* emgr, struct ForceFieldManager* ffmgr, struct LeaderboardManager* lbmgr)
 {
     *score = 0;
     *lives = 3;
@@ -209,4 +261,5 @@ void InitGame(int* score, int* lives, int* wave, struct LaserManager* lmgr, stru
     SpawnWave(emgr, *wave);
     InitStarfield();
     InitForceField(ffmgr);
+    ResetLeaderboardFlags(lbmgr);
 }

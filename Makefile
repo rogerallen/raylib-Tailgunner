@@ -38,7 +38,7 @@ ifeq ($(PLATFORM), web)
     RAYLIB_PATH = $(RAYLIB_EMSCRIPTEN_PATH)
     INCLUDE_PATHS = -I$(SRC_DIR) -I$(RAYLIB_PATH)/src
     LIBRARY_PATHS = -L$(RAYLIB_PATH)/raylib
-    LDLIBS = -lraylib
+    LDLIBS = -lraylib -lhtml5 -lfetch
     TARGET = $(PROJECT_NAME).html
 else
     CC = gcc
@@ -51,12 +51,12 @@ else
     RAYLIB_PATH = $(RAYLIB_NATIVE_PATH)
     INCLUDE_PATHS = -I$(SRC_DIR) -I$(RAYLIB_PATH)/include
     LDFLAGS = -L$(RAYLIB_PATH)/lib
-    LDLIBS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
+    LDLIBS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -lcurl
     TARGET = $(PROJECT_NAME)
 endif
 
 # Files
-SRC = $(wildcard $(SRC_DIR)/*.c)
+SRC = $(wildcard $(SRC_DIR)/*.c) $(SRC_DIR)/cJSON.c
 OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRC))
 
 # Targets
@@ -70,6 +70,7 @@ web:
 $(TARGET): $(OBJS)
 ifeq ($(PLATFORM), web)
 	$(CC) -o $@ $^ $(CFLAGS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(LDLIBS) $(LDFLAGS) --shell-file shell.html
+	cp $(PROJECT_NAME).html index.html
 else
 	$(CC) -o $@ $^ $(CFLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS)
 endif
@@ -81,7 +82,7 @@ $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)
 
 clean:
-	rm -rf obj $(PROJECT_NAME) $(PROJECT_NAME).data $(PROJECT_NAME).html $(PROJECT_NAME).js $(PROJECT_NAME).wasm
+	rm -rf obj $(PROJECT_NAME) $(PROJECT_NAME).data $(PROJECT_NAME).html $(PROJECT_NAME).js $(PROJECT_NAME).wasm index.html
 
 run: all
 	LD_LIBRARY_PATH=$(RAYLIB_PATH)/lib ./$(PROJECT_NAME)

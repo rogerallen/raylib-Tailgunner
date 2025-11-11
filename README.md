@@ -15,6 +15,8 @@ Controls: **left click** to fire, **space** to activate the force field, Enter o
 
 Look in makefile and point RAYLIB_NATIVE_PATH to the right spot.  You will need a native build of raylib.  Download a build of raylib from [here](https://github.com/raysan5/raylib/releases).
 
+Make sure libcurl, libssl headers are installed: `sudo apt install libcurl4-openssl-dev`
+
 ```
 make
 make run
