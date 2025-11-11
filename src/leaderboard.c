@@ -5,71 +5,88 @@
 #include <stdio.h>
 #include <string.h>
 
-#define BASE_LEADERBOARD_URL "https://geraldburke.com/apis/simple-leaderboard-api/"
-
-// TODO:
-// - [ ] Check User Scores prior to pushing them so we don't put in duplicates.
-// - [ ] Show Current User Top Score when it doesn't appear on the Global Top Scores list.
-// - [ ] Get working on Linux.
-// - [ ] Implement structures, not global state.
-
 #if defined(PLATFORM_WEB)
 #include <emscripten/emscripten.h>
 #include <emscripten/fetch.h>
 #include <emscripten/html5.h> // For local storage
-#include <stdlib.h> // For malloc
-
-EM_JS(char*, emscripten_local_storage_get_item_js, (const char* key_ptr), {
-  var key = UTF8ToString(key_ptr);
-  var value = localStorage.getItem(key);
-  if (value === null) {
-    return 0; // Return null pointer if item not found
-  }
-  var length = lengthBytesUTF8(value) + 1;
-  var value_ptr = _malloc(length);
-  stringToUTF8(value, value_ptr, length);
-  return value_ptr;
-});
-
-EM_JS(int, emscripten_local_storage_set_item_js, (const char* key_ptr, const char* value_ptr), {
-  var key = UTF8ToString(key_ptr);
-  var value = UTF8ToString(value_ptr);
-  try {
-    localStorage.setItem(key, value);
-    return 0; // Success
-  } catch (e) {
-    return 1; // Failure
-  }
-});
-
+#else
+#include <curl/curl.h>
 #endif
+#include <stdlib.h> // For malloc, realloc, free
+
+#define BASE_LEADERBOARD_URL "https://geraldburke.com/apis/simple-leaderboard-api/"
+
+// TODO:
+// - [ ] Check User Scores prior to pushing them so we don't put in duplicates.
+// - [ ] Implement structures, not global state.
 
 #define MAX_SCORES 10
-#define GAME_ID 19
-#define PLAYER_NAME_STORAGE_KEY "tailgunner_player_name"
 
-static LeaderboardEntry globalTop10[MAX_SCORES];
-static LeaderboardEntry userTop10[MAX_SCORES];
-static char playerName[MAX_NAME_LENGTH + 1] = { 'A', 'A', 'A', '\0' };
-static int charIndex = 0;
+// Structure to hold memory for libcurl response
+typedef struct {
+    char *memory;
+    size_t size;
+} MemoryStruct;
 
-static bool isLeaderboardActive = false;
-static bool scoreSubmitted = false;
-static bool globalScoresFetched = false;
-static bool userScoresFetched = false;
-static bool globalScoresFetching = false;
-static bool userScoresFetching = false;
-static bool requestLeaderboardUpdate = false;
+static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp) {
+    size_t realsize = size * nmemb;
+    MemoryStruct *mem = (MemoryStruct *)userp;
 
-static Rectangle upArrows[MAX_NAME_LENGTH];
-static Rectangle downArrows[MAX_NAME_LENGTH];
-static Rectangle charBoxes[MAX_NAME_LENGTH];
-static Rectangle submitButton;
+    char *ptr = realloc(mem->memory, mem->size + realsize + 1);
+    if(ptr == NULL) {
+        /* out of memory! */
+        printf("not enough memory (realloc returned NULL)\n");
+        return 0;
+    }
 
-static void ParseLeaderboardData(emscripten_fetch_t *fetch, LeaderboardEntry *entries, bool *fetchedFlag, bool *fetchingFlag)
+    mem->memory = ptr;
+    memcpy(&(mem->memory[mem->size]), contents, realsize);
+    mem->size += realsize;
+    mem->memory[mem->size] = 0;
+
+    return realsize;
+}
+
+static void ParseUserScores(const char *data, size_t size, LeaderboardEntry *entries, bool *fetchedFlag, bool *fetchingFlag)
 {
     memset(entries, 0, sizeof(LeaderboardEntry) * MAX_SCORES);
-    cJSON *json = cJSON_ParseWithLength(fetch->data, fetch->numBytes);
+    cJSON *json = cJSON_ParseWithLength(data, size);
+    if (json == NULL)
+    {
+        const char *error_ptr = cJSON_GetErrorPtr();
+        if (error_ptr != NULL)
+        {
+            fprintf(stderr, "Error before: %s\n", error_ptr);
+        }
+        *fetchedFlag = true; // Mark as fetched to avoid continuous retries on parse error
+        *fetchingFlag = false;
+        return;
+    }
+
+    int count = cJSON_GetArraySize(json);
+    int entryIndex = 0;
+    for (int i = 0; i < count && entryIndex < MAX_SCORES; i++)
+    {
+        cJSON *item = cJSON_GetArrayItem(json, i);
+        if (item != NULL && item->child != NULL)
+        {
+            strncpy(entries[entryIndex].name, item->child->string, MAX_NAME_LENGTH);
+            entries[entryIndex].name[MAX_NAME_LENGTH] = '\0';
+            entries[entryIndex].score = item->child->valueint;
+            printf("Parsed: %s - %d\n", entries[entryIndex].name, entries[entryIndex].score);
+            entryIndex++;
+        }
+    }
+
+    cJSON_Delete(json);
+    *fetchedFlag = true;
+    *fetchingFlag = false;
+}
+
+static void ProcessHttpResponse(const char *data, size_t size, LeaderboardEntry *entries, bool *fetchedFlag, bool *fetchingFlag)
+{
+    memset(entries, 0, sizeof(LeaderboardEntry) * MAX_SCORES);
+    cJSON *json = cJSON_ParseWithLength(data, size);
     if (json == NULL)
     {
         const char *error_ptr = cJSON_GetErrorPtr();
@@ -110,6 +127,54 @@ static void ParseLeaderboardData(emscripten_fetch_t *fetch, LeaderboardEntry *en
     *fetchingFlag = false;
 }
 
+#if defined(PLATFORM_WEB)
+EM_JS(char*, emscripten_local_storage_get_item_js, (const char* key_ptr), {
+  var key = UTF8ToString(key_ptr);
+  var value = localStorage.getItem(key);
+  if (value === null) {
+    return 0; // Return null pointer if item not found
+  }
+  var length = lengthBytesUTF8(value) + 1;
+  var value_ptr = _malloc(length);
+  stringToUTF8(value, value_ptr, length);
+  return value_ptr;
+});
+
+EM_JS(int, emscripten_local_storage_set_item_js, (const char* key_ptr, const char* value_ptr), {
+  var key = UTF8ToString(key_ptr);
+  var value = UTF8ToString(value_ptr);
+  try {
+    localStorage.setItem(key, value);
+    return 0; // Success
+  } catch (e) {
+    return 1; // Failure
+  }
+});
+#endif
+
+#define MAX_SCORES 10
+#define GAME_ID 19
+#define PLAYER_NAME_STORAGE_KEY "tailgunner_player_name"
+
+static LeaderboardEntry globalTop10[MAX_SCORES];
+static LeaderboardEntry userTop10[MAX_SCORES];
+static char playerName[MAX_NAME_LENGTH + 1] = { 'A', 'A', 'A', '\0' };
+
+
+static bool isLeaderboardActive = false;
+static bool scoreSubmitted = false;
+static bool globalScoresFetched = false;
+static bool userScoresFetched = false;
+static bool globalScoresFetching = false;
+static bool userScoresFetching = false;
+static bool requestLeaderboardUpdate = false;
+
+static Rectangle upArrows[MAX_NAME_LENGTH];
+static Rectangle downArrows[MAX_NAME_LENGTH];
+static Rectangle charBoxes[MAX_NAME_LENGTH];
+static Rectangle submitButton;
+
+#if defined(PLATFORM_WEB)
 void onSubmitSuccess(emscripten_fetch_t *fetch) {
     printf("Score submitted successfully.\n");
     scoreSubmitted = true;
@@ -129,13 +194,14 @@ void onFetchFailure(emscripten_fetch_t *fetch) {
 
 void onGlobalScoresSuccess(emscripten_fetch_t *fetch) {
     printf("Global scores fetched successfully.\n");
-    ParseLeaderboardData(fetch, globalTop10, &globalScoresFetched, &globalScoresFetching);
+    ProcessHttpResponse(fetch->data, fetch->numBytes, globalTop10, &globalScoresFetched, &globalScoresFetching);
 }
 
 void onUserScoresSuccess(emscripten_fetch_t *fetch) {
     printf("User scores fetched successfully.\n");
-    ParseLeaderboardData(fetch, userTop10, &userScoresFetched, &userScoresFetching);
+    ParseUserScores(fetch->data, fetch->numBytes, userTop10, &userScoresFetched, &userScoresFetching);
 }
+#endif
 
 void InitLeaderboard()
 {
@@ -215,8 +281,31 @@ void SubmitScore(int score)
     sprintf(url, "%s?action=newScore&gameID=%d&userName=%s&score=%d", BASE_LEADERBOARD_URL, GAME_ID, playerName, score);
     emscripten_fetch(&attr, url);
 #else
-    // No-op for non-web platforms for now
-    scoreSubmitted = true;
+    CURL *curl;
+    CURLcode res;
+
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+    curl = curl_easy_init();
+    if(curl) {
+        char url[256];
+        sprintf(url, "%s?action=newScore&gameID=%d&userName=%s&score=%d", BASE_LEADERBOARD_URL, GAME_ID, playerName, score);
+        
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, NULL); // We don't need to write the response to a variable
+
+        res = curl_easy_perform(curl);
+
+        if(res != CURLE_OK) {
+            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        } else {
+            printf("Score submitted successfully.\n");
+            scoreSubmitted = true;
+            RequestLeaderboardUpdate();
+        }
+
+        curl_easy_cleanup(curl);
+    }
+    curl_global_cleanup();
 #endif
 }
 
@@ -238,8 +327,40 @@ void FetchGlobalTop10()
     sprintf(url, "%s?action=topScores&gameID=%d", BASE_LEADERBOARD_URL, GAME_ID);  // &count=10 is default
     emscripten_fetch(&attr, url);
 #else
-    // No-op for non-web platforms for now
-    globalScoresFetched = true;
+    if (globalScoresFetching) return;
+    globalScoresFetching = true;
+
+    CURL *curl;
+    CURLcode res;
+    MemoryStruct chunk;
+
+    chunk.memory = malloc(1);
+    chunk.size = 0;
+
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+    curl = curl_easy_init();
+    if(curl) {
+        char url[256];
+        sprintf(url, "%s?action=topScores&gameID=%d", BASE_LEADERBOARD_URL, GAME_ID);
+        
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
+
+        res = curl_easy_perform(curl);
+
+        if(res != CURLE_OK) {
+            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            globalScoresFetching = false;
+        } else {
+            printf("Global scores fetched successfully.\n");
+            ProcessHttpResponse(chunk.memory, chunk.size, globalTop10, &globalScoresFetched, &globalScoresFetching);
+        }
+
+        curl_easy_cleanup(curl);
+        free(chunk.memory);
+    }
+    curl_global_cleanup();
 #endif
 }
 
@@ -261,8 +382,40 @@ void FetchUserTop10(const char* name)
     sprintf(url, "%s?action=userScores&gameID=%d&userName=%s", BASE_LEADERBOARD_URL, GAME_ID, name);  // &count=10 is default
     emscripten_fetch(&attr, url);
 #else
-    // No-op for non-web platforms for now
-    userScoresFetched = true;
+    if (userScoresFetching) return;
+    userScoresFetching = true;
+
+    CURL *curl;
+    CURLcode res;
+    MemoryStruct chunk;
+
+    chunk.memory = malloc(1);
+    chunk.size = 0;
+
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+    curl = curl_easy_init();
+    if(curl) {
+        char url[256];
+        sprintf(url, "%s?action=userScores&gameID=%d&userName=%s", BASE_LEADERBOARD_URL, GAME_ID, name);
+        
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
+
+        res = curl_easy_perform(curl);
+
+        if(res != CURLE_OK) {
+            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            userScoresFetching = false;
+        } else {
+            printf("User scores fetched successfully.\n");
+            ParseUserScores(chunk.memory, chunk.size, userTop10, &userScoresFetched, &userScoresFetching);
+        }
+
+        curl_easy_cleanup(curl);
+        free(chunk.memory);
+    }
+    curl_global_cleanup();
 #endif
 }
 

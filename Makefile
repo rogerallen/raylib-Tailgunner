@@ -51,7 +51,7 @@ else
     RAYLIB_PATH = $(RAYLIB_NATIVE_PATH)
     INCLUDE_PATHS = -I$(SRC_DIR) -I$(RAYLIB_PATH)/include
     LDFLAGS = -L$(RAYLIB_PATH)/lib
-    LDLIBS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
+    LDLIBS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -lcurl
     TARGET = $(PROJECT_NAME)
 endif
 
