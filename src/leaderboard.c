@@ -45,6 +45,64 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
 
     return realsize;
 }
+
+// Helper: perform a GET request into memory using libcurl. Caller must free out->memory on success.
+static bool CurlGetToMemory(const char *url, MemoryStruct *out)
+{
+    CURL *curl;
+    CURLcode res;
+
+    out->memory = malloc(1);
+    if (!out->memory) return false;
+    out->size = 0;
+
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+    curl = curl_easy_init();
+    if (!curl) {
+        curl_global_cleanup();
+        free(out->memory);
+        out->memory = NULL;
+        return false;
+    }
+
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)out);
+
+    res = curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
+    curl_global_cleanup();
+
+    if (res != CURLE_OK)
+    {
+        free(out->memory);
+        out->memory = NULL;
+        out->size = 0;
+        return false;
+    }
+
+    return true;
+}
+
+// Helper: perform a request when we don't need response body (e.g., submit score)
+static bool CurlPerformNoWrite(const char *url)
+{
+    CURL *curl;
+    CURLcode res;
+
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+    curl = curl_easy_init();
+    if(!curl) { curl_global_cleanup(); return false; }
+
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, NULL);
+
+    res = curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
+    curl_global_cleanup();
+
+    return (res == CURLE_OK);
+}
 #endif
 
 static void ParseUserScores(const char *data, size_t size, LeaderboardEntry *entries, bool *fetchedFlag, bool *fetchingFlag)
@@ -83,7 +141,7 @@ static void ParseUserScores(const char *data, size_t size, LeaderboardEntry *ent
     *fetchingFlag = false;
 }
 
-static void ProcessHttpResponse(const char *data, size_t size, LeaderboardEntry *entries, bool *fetchedFlag, bool *fetchingFlag)
+static void ParseGlobalScores(const char *data, size_t size, LeaderboardEntry *entries, bool *fetchedFlag, bool *fetchingFlag)
 {
     memset(entries, 0, sizeof(LeaderboardEntry) * LEADERBOARD_MAX_SCORES);
     cJSON *json = cJSON_ParseWithLength(data, size);
@@ -191,7 +249,7 @@ void onFetchFailure(emscripten_fetch_t *fetch) {
 
 void onGlobalScoresSuccess(emscripten_fetch_t *fetch) {
     printf("Global scores fetched successfully.\n");
-    ProcessHttpResponse(fetch->data, fetch->numBytes, globalTop10, &globalScoresFetched, &globalScoresFetching);
+    ParseGlobalScores(fetch->data, fetch->numBytes, globalTop10, &globalScoresFetched, &globalScoresFetching);
 }
 
 void onUserScoresSuccess(emscripten_fetch_t *fetch) {
@@ -301,6 +359,9 @@ void DrawNameInput()
 
 void SubmitScore(int score)
 {
+    char url[256];
+    sprintf(url, "%s?action=newScore&gameID=%d&userName=%s&score=%d", LEADERBOARD_BASE_URL, LEADERBOARD_GAME_ID, playerName, score);
+
 #if defined(PLATFORM_WEB)
     emscripten_fetch_attr_t attr;
     emscripten_fetch_attr_init(&attr);
@@ -309,41 +370,23 @@ void SubmitScore(int score)
     attr.onsuccess = onSubmitSuccess;
     attr.onerror = onFetchFailure;
 
-    char url[256];
-    //BAD URL: sprintf(url, "https://simple-leaderboard-api.onrender.com/game/%d/leaderboard?player_name=%s&score=%d", LEADERBOARD_GAME_ID, playerName, score);
-    sprintf(url, "%s?action=newScore&gameID=%d&userName=%s&score=%d", LEADERBOARD_BASE_URL, LEADERBOARD_GAME_ID, playerName, score);
     emscripten_fetch(&attr, url);
 #else
-    CURL *curl;
-    CURLcode res;
-
-    curl_global_init(CURL_GLOBAL_DEFAULT);
-    curl = curl_easy_init();
-    if(curl) {
-        char url[256];
-        sprintf(url, "%s?action=newScore&gameID=%d&userName=%s&score=%d", LEADERBOARD_BASE_URL, LEADERBOARD_GAME_ID, playerName, score);
-        
-        curl_easy_setopt(curl, CURLOPT_URL, url);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, NULL); // We don't need to write the response to a variable
-
-        res = curl_easy_perform(curl);
-
-        if(res != CURLE_OK) {
-            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
-        } else {
-            printf("Score submitted successfully.\n");
-            scoreSubmitted = true;
-            RequestLeaderboardUpdate();
-        }
-
-        curl_easy_cleanup(curl);
+    if (!CurlPerformNoWrite(url)) {
+        fprintf(stderr, "Score submission failed for URL: %s\n", url);
+    } else {
+        printf("Score submitted successfully.\n");
+        scoreSubmitted = true;
+        RequestLeaderboardUpdate();
     }
-    curl_global_cleanup();
 #endif
 }
 
 void FetchGlobalTop10()
 {
+    char url[256];
+    sprintf(url, "%s?action=topScores&gameID=%d", LEADERBOARD_BASE_URL, LEADERBOARD_GAME_ID);  // &count=10 is default
+
 #if defined(PLATFORM_WEB)
     if (globalScoresFetching) return;
     globalScoresFetching = true;
@@ -355,50 +398,28 @@ void FetchGlobalTop10()
     attr.onsuccess = onGlobalScoresSuccess;
     attr.onerror = onFetchFailure;
 
-    char url[256];
-    // BAD URL sprintf(url, "https://simple-leaderboard-api.onrender.com/game/%d/leaderboard", LEADERBOARD_GAME_ID);
-    sprintf(url, "%s?action=topScores&gameID=%d", LEADERBOARD_BASE_URL, LEADERBOARD_GAME_ID);  // &count=10 is default
     emscripten_fetch(&attr, url);
 #else
     if (globalScoresFetching) return;
     globalScoresFetching = true;
 
-    CURL *curl;
-    CURLcode res;
     MemoryStruct chunk;
-
-    chunk.memory = malloc(1);
-    chunk.size = 0;
-
-    curl_global_init(CURL_GLOBAL_DEFAULT);
-    curl = curl_easy_init();
-    if(curl) {
-        char url[256];
-        sprintf(url, "%s?action=topScores&gameID=%d", LEADERBOARD_BASE_URL, LEADERBOARD_GAME_ID);
-        
-        curl_easy_setopt(curl, CURLOPT_URL, url);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
-
-        res = curl_easy_perform(curl);
-
-        if(res != CURLE_OK) {
-            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
-            globalScoresFetching = false;
-        } else {
-            printf("Global scores fetched successfully.\n");
-            ProcessHttpResponse(chunk.memory, chunk.size, globalTop10, &globalScoresFetched, &globalScoresFetching);
-        }
-
-        curl_easy_cleanup(curl);
+    if (!CurlGetToMemory(url, &chunk)) {
+        fprintf(stderr, "Failed to fetch global scores from URL: %s\n", url);
+        globalScoresFetching = false;
+    } else {
+        printf("Global scores fetched successfully.\n");
+        ParseGlobalScores(chunk.memory, chunk.size, globalTop10, &globalScoresFetched, &globalScoresFetching);
         free(chunk.memory);
     }
-    curl_global_cleanup();
 #endif
 }
 
 void FetchUserTop10(const char* name)
 {
+    char url[256];
+    sprintf(url, "%s?action=userScores&gameID=%d&userName=%s", LEADERBOARD_BASE_URL, LEADERBOARD_GAME_ID, name);  // &count=10 is default
+
 #if defined(PLATFORM_WEB)
     if (userScoresFetching) return;
     userScoresFetching = true;
@@ -410,45 +431,20 @@ void FetchUserTop10(const char* name)
     attr.onsuccess = onUserScoresSuccess;
     attr.onerror = onFetchFailure;
 
-    char url[256];
-    // BAD URL sprintf(url, "https://simple-leaderboard-api.onrender.com/game/%d/leaderboard?player_name=%s", LEADERBOARD_GAME_ID, name);
-    sprintf(url, "%s?action=userScores&gameID=%d&userName=%s", LEADERBOARD_BASE_URL, LEADERBOARD_GAME_ID, name);  // &count=10 is default
     emscripten_fetch(&attr, url);
 #else
     if (userScoresFetching) return;
     userScoresFetching = true;
 
-    CURL *curl;
-    CURLcode res;
     MemoryStruct chunk;
-
-    chunk.memory = malloc(1);
-    chunk.size = 0;
-
-    curl_global_init(CURL_GLOBAL_DEFAULT);
-    curl = curl_easy_init();
-    if(curl) {
-        char url[256];
-        sprintf(url, "%s?action=userScores&gameID=%d&userName=%s", LEADERBOARD_BASE_URL, LEADERBOARD_GAME_ID, name);
-        
-        curl_easy_setopt(curl, CURLOPT_URL, url);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
-
-        res = curl_easy_perform(curl);
-
-        if(res != CURLE_OK) {
-            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
-            userScoresFetching = false;
-        } else {
-            printf("User scores fetched successfully.\n");
-            ParseUserScores(chunk.memory, chunk.size, userTop10, &userScoresFetched, &userScoresFetching);
-        }
-
-        curl_easy_cleanup(curl);
+    if (!CurlGetToMemory(url, &chunk)) {
+        fprintf(stderr, "Failed to fetch user scores from URL: %s\n", url);
+        userScoresFetching = false;
+    } else {
+        printf("User scores fetched successfully.\n");
+        ParseUserScores(chunk.memory, chunk.size, userTop10, &userScoresFetched, &userScoresFetching);
         free(chunk.memory);
     }
-    curl_global_cleanup();
 #endif
 }
 
