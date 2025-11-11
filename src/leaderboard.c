@@ -158,7 +158,6 @@ static void ParseGlobalScores(const char *data, size_t size, LeaderboardEntry *e
     }
 
     int count = cJSON_GetArraySize(json);
-    int lastScore = -1;
     int entryIndex = 0;
     for (int i = 0; i < count && entryIndex < LEADERBOARD_MAX_SCORES; i++)
     {
@@ -168,12 +167,23 @@ static void ParseGlobalScores(const char *data, size_t size, LeaderboardEntry *e
 
         if (cJSON_IsString(name) && (name->valuestring != NULL) && cJSON_IsNumber(score))
         {
-            if ((int)score->valuedouble != lastScore)
+            // Check if this (user, score) pair already exists to avoid exact duplicates
+            bool isDuplicate = false;
+            for (int j = 0; j < entryIndex; j++)
+            {
+                if (strcmp(entries[j].name, name->valuestring) == 0 && 
+                    entries[j].score == (int)score->valuedouble)
+                {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+
+            if (!isDuplicate)
             {
                 strncpy(entries[entryIndex].name, name->valuestring, LEADERBOARD_NAME_LENGTH);
                 entries[entryIndex].name[LEADERBOARD_NAME_LENGTH] = '\0';
                 entries[entryIndex].score = (int)score->valuedouble;
-                lastScore = entries[entryIndex].score;
                 printf("Parsed: %s - %d\n", entries[entryIndex].name, entries[entryIndex].score);
                 entryIndex++;
             }
@@ -461,9 +471,7 @@ void UpdateLeaderboard(int *gameState, int score)
     if (!globalScoresFetched && !globalScoresFetching) FetchGlobalTop10();
     if (!userScoresFetched && !userScoresFetching) FetchUserTop10(playerName);
 
-
-    // This is a placeholder for the full leaderboard logic
-    if (IsKeyPressed(KEY_ENTER))
+    if (IsKeyPressed(KEY_ENTER) || IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
     {
         SetLeaderboardActive(false);
         *gameState = STATE_START;
@@ -523,7 +531,7 @@ void DrawLeaderboard()
                      startY + (LEADERBOARD_MAX_SCORES + 3) * lineHeight, 20, COLOR_TEXT_SUBTITLE);
         }
 
-        DrawText("Press ENTER to continue", GetScreenWidth() / 2 - MeasureText("Press ENTER to continue", 20) / 2, GetScreenHeight() - 50, 20, COLOR_TEXT_SUBTITLE);
+        DrawText("Press ENTER or CLICK to Continue", GetScreenWidth() / 2 - MeasureText("Press ENTER or CLICK to Continue", 20) / 2, GetScreenHeight() - 50, 20, COLOR_TEXT_SUBTITLE);
     }
     else
     {
