@@ -7,6 +7,9 @@
 
 // Leaderboard configuration
 #define LEADERBOARD_GAME_ID 19
+#define LEADERBOARD_BASE_URL "https://geraldburke.com/apis/simple-leaderboard-api/"
+#define LEADERBOARD_MAX_SCORES 10
+#define LEADERBOARD_NAME_LENGTH 3
 
 // Gameplay tuning constants
 

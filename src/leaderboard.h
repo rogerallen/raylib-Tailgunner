@@ -2,11 +2,10 @@
 #define LEADERBOARD_H
 
 #include "raylib.h"
-
-#define MAX_NAME_LENGTH 3
+#include "config.h"
 
 typedef struct {
-    char name[MAX_NAME_LENGTH + 1];
+    char name[LEADERBOARD_NAME_LENGTH + 1];
     int score;
 } LeaderboardEntry;
 

@@ -14,13 +14,11 @@
 #endif
 #include <stdlib.h> // For malloc, realloc, free
 
-#define BASE_LEADERBOARD_URL "https://geraldburke.com/apis/simple-leaderboard-api/"
 
 // TODO:
 // - [ ] Check User Scores prior to pushing them so we don't put in duplicates.
 // - [ ] Implement structures, not global state.
 
-#define MAX_SCORES 10
 
 #if !defined(PLATFORM_WEB)
 // Structure to hold memory for libcurl response
@@ -51,7 +49,7 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
 
 static void ParseUserScores(const char *data, size_t size, LeaderboardEntry *entries, bool *fetchedFlag, bool *fetchingFlag)
 {
-    memset(entries, 0, sizeof(LeaderboardEntry) * MAX_SCORES);
+    memset(entries, 0, sizeof(LeaderboardEntry) * LEADERBOARD_MAX_SCORES);
     cJSON *json = cJSON_ParseWithLength(data, size);
     if (json == NULL)
     {
@@ -67,13 +65,13 @@ static void ParseUserScores(const char *data, size_t size, LeaderboardEntry *ent
 
     int count = cJSON_GetArraySize(json);
     int entryIndex = 0;
-    for (int i = 0; i < count && entryIndex < MAX_SCORES; i++)
+    for (int i = 0; i < count && entryIndex < LEADERBOARD_MAX_SCORES; i++)
     {
         cJSON *item = cJSON_GetArrayItem(json, i);
         if (item != NULL && item->child != NULL)
         {
-            strncpy(entries[entryIndex].name, item->child->string, MAX_NAME_LENGTH);
-            entries[entryIndex].name[MAX_NAME_LENGTH] = '\0';
+            strncpy(entries[entryIndex].name, item->child->string, LEADERBOARD_NAME_LENGTH);
+            entries[entryIndex].name[LEADERBOARD_NAME_LENGTH] = '\0';
             entries[entryIndex].score = item->child->valueint;
             printf("Parsed: %s - %d\n", entries[entryIndex].name, entries[entryIndex].score);
             entryIndex++;
@@ -87,7 +85,7 @@ static void ParseUserScores(const char *data, size_t size, LeaderboardEntry *ent
 
 static void ProcessHttpResponse(const char *data, size_t size, LeaderboardEntry *entries, bool *fetchedFlag, bool *fetchingFlag)
 {
-    memset(entries, 0, sizeof(LeaderboardEntry) * MAX_SCORES);
+    memset(entries, 0, sizeof(LeaderboardEntry) * LEADERBOARD_MAX_SCORES);
     cJSON *json = cJSON_ParseWithLength(data, size);
     if (json == NULL)
     {
@@ -104,7 +102,7 @@ static void ProcessHttpResponse(const char *data, size_t size, LeaderboardEntry 
     int count = cJSON_GetArraySize(json);
     int lastScore = -1;
     int entryIndex = 0;
-    for (int i = 0; i < count && entryIndex < MAX_SCORES; i++)
+    for (int i = 0; i < count && entryIndex < LEADERBOARD_MAX_SCORES; i++)
     {
         cJSON *item = cJSON_GetArrayItem(json, i);
         cJSON *name = cJSON_GetObjectItemCaseSensitive(item, "userName");
@@ -114,8 +112,8 @@ static void ProcessHttpResponse(const char *data, size_t size, LeaderboardEntry 
         {
             if ((int)score->valuedouble != lastScore)
             {
-                strncpy(entries[entryIndex].name, name->valuestring, MAX_NAME_LENGTH);
-                entries[entryIndex].name[MAX_NAME_LENGTH] = '\0';
+                strncpy(entries[entryIndex].name, name->valuestring, LEADERBOARD_NAME_LENGTH);
+                entries[entryIndex].name[LEADERBOARD_NAME_LENGTH] = '\0';
                 entries[entryIndex].score = (int)score->valuedouble;
                 lastScore = entries[entryIndex].score;
                 printf("Parsed: %s - %d\n", entries[entryIndex].name, entries[entryIndex].score);
@@ -154,14 +152,11 @@ EM_JS(int, emscripten_local_storage_set_item_js, (const char* key_ptr, const cha
 });
 #endif
 
-#define MAX_SCORES 10
-#define GAME_ID 19
 #define PLAYER_NAME_STORAGE_KEY "tailgunner_player_name"
 
-static LeaderboardEntry globalTop10[MAX_SCORES];
-static LeaderboardEntry userTop10[MAX_SCORES];
-static char playerName[MAX_NAME_LENGTH + 1] = { 'A', 'A', 'A', '\0' };
-
+static LeaderboardEntry globalTop10[LEADERBOARD_MAX_SCORES];
+static LeaderboardEntry userTop10[LEADERBOARD_MAX_SCORES];
+static char playerName[LEADERBOARD_NAME_LENGTH + 1] = { 'A', 'A', 'A', '\0' };
 
 static bool isLeaderboardActive = false;
 static bool scoreSubmitted = false;
@@ -171,9 +166,9 @@ static bool globalScoresFetching = false;
 static bool userScoresFetching = false;
 static bool requestLeaderboardUpdate = false;
 
-static Rectangle upArrows[MAX_NAME_LENGTH];
-static Rectangle downArrows[MAX_NAME_LENGTH];
-static Rectangle charBoxes[MAX_NAME_LENGTH];
+static Rectangle upArrows[LEADERBOARD_NAME_LENGTH];
+static Rectangle downArrows[LEADERBOARD_NAME_LENGTH];
+static Rectangle charBoxes[LEADERBOARD_NAME_LENGTH];
 static Rectangle submitButton;
 
 #if defined(PLATFORM_WEB)
@@ -239,7 +234,7 @@ static void LoadPlayerName()
 
 void InitLeaderboard()
 {
-    for (int i = 0; i < MAX_NAME_LENGTH; i++)
+    for (int i = 0; i < LEADERBOARD_NAME_LENGTH; i++)
     {
         charBoxes[i] = (Rectangle){ GetScreenWidth() / 2 - 70 + i * 50, GetScreenHeight() / 2 - 20, 40, 40 };
         upArrows[i] = (Rectangle){ charBoxes[i].x, charBoxes[i].y - 30, 40, 20 };
@@ -251,8 +246,8 @@ void InitLeaderboard()
     char *storedName = emscripten_local_storage_get_item_js(PLAYER_NAME_STORAGE_KEY);
     if (storedName != NULL)
     {
-        strncpy(playerName, storedName, MAX_NAME_LENGTH);
-        playerName[MAX_NAME_LENGTH] = '\0';
+        strncpy(playerName, storedName, LEADERBOARD_NAME_LENGTH);
+        playerName[LEADERBOARD_NAME_LENGTH] = '\0';
         free(storedName);
     }
 #else
@@ -262,7 +257,7 @@ void InitLeaderboard()
 
 bool UpdateNameInput()
 {
-    for (int i = 0; i < MAX_NAME_LENGTH; i++)
+    for (int i = 0; i < LEADERBOARD_NAME_LENGTH; i++)
     {
         if (CheckCollisionPointRec(GetMousePosition(), upArrows[i]) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
@@ -292,7 +287,7 @@ void DrawNameInput()
 {
     DrawText("Enter Your Initials", GetScreenWidth() / 2 - MeasureText("Enter Your Initials", 30) / 2, GetScreenHeight() / 2 - 100, 30, COLOR_TEXT_TITLE);
 
-    for (int i = 0; i < MAX_NAME_LENGTH; i++)
+    for (int i = 0; i < LEADERBOARD_NAME_LENGTH; i++)
     {
         DrawRectangleRec(charBoxes[i], COLOR_INITIAL_BOX);
         DrawText(TextFormat("%c", playerName[i]), charBoxes[i].x + 12, charBoxes[i].y + 5, 30, COLOR_BACKGROUND);
@@ -315,8 +310,8 @@ void SubmitScore(int score)
     attr.onerror = onFetchFailure;
 
     char url[256];
-    //BAD URL: sprintf(url, "https://simple-leaderboard-api.onrender.com/game/%d/leaderboard?player_name=%s&score=%d", GAME_ID, playerName, score);
-    sprintf(url, "%s?action=newScore&gameID=%d&userName=%s&score=%d", BASE_LEADERBOARD_URL, GAME_ID, playerName, score);
+    //BAD URL: sprintf(url, "https://simple-leaderboard-api.onrender.com/game/%d/leaderboard?player_name=%s&score=%d", LEADERBOARD_GAME_ID, playerName, score);
+    sprintf(url, "%s?action=newScore&gameID=%d&userName=%s&score=%d", LEADERBOARD_BASE_URL, LEADERBOARD_GAME_ID, playerName, score);
     emscripten_fetch(&attr, url);
 #else
     CURL *curl;
@@ -326,7 +321,7 @@ void SubmitScore(int score)
     curl = curl_easy_init();
     if(curl) {
         char url[256];
-        sprintf(url, "%s?action=newScore&gameID=%d&userName=%s&score=%d", BASE_LEADERBOARD_URL, GAME_ID, playerName, score);
+        sprintf(url, "%s?action=newScore&gameID=%d&userName=%s&score=%d", LEADERBOARD_BASE_URL, LEADERBOARD_GAME_ID, playerName, score);
         
         curl_easy_setopt(curl, CURLOPT_URL, url);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, NULL); // We don't need to write the response to a variable
@@ -361,8 +356,8 @@ void FetchGlobalTop10()
     attr.onerror = onFetchFailure;
 
     char url[256];
-    // BAD URL sprintf(url, "https://simple-leaderboard-api.onrender.com/game/%d/leaderboard", GAME_ID);
-    sprintf(url, "%s?action=topScores&gameID=%d", BASE_LEADERBOARD_URL, GAME_ID);  // &count=10 is default
+    // BAD URL sprintf(url, "https://simple-leaderboard-api.onrender.com/game/%d/leaderboard", LEADERBOARD_GAME_ID);
+    sprintf(url, "%s?action=topScores&gameID=%d", LEADERBOARD_BASE_URL, LEADERBOARD_GAME_ID);  // &count=10 is default
     emscripten_fetch(&attr, url);
 #else
     if (globalScoresFetching) return;
@@ -379,7 +374,7 @@ void FetchGlobalTop10()
     curl = curl_easy_init();
     if(curl) {
         char url[256];
-        sprintf(url, "%s?action=topScores&gameID=%d", BASE_LEADERBOARD_URL, GAME_ID);
+        sprintf(url, "%s?action=topScores&gameID=%d", LEADERBOARD_BASE_URL, LEADERBOARD_GAME_ID);
         
         curl_easy_setopt(curl, CURLOPT_URL, url);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
@@ -416,8 +411,8 @@ void FetchUserTop10(const char* name)
     attr.onerror = onFetchFailure;
 
     char url[256];
-    // BAD URL sprintf(url, "https://simple-leaderboard-api.onrender.com/game/%d/leaderboard?player_name=%s", GAME_ID, name);
-    sprintf(url, "%s?action=userScores&gameID=%d&userName=%s", BASE_LEADERBOARD_URL, GAME_ID, name);  // &count=10 is default
+    // BAD URL sprintf(url, "https://simple-leaderboard-api.onrender.com/game/%d/leaderboard?player_name=%s", LEADERBOARD_GAME_ID, name);
+    sprintf(url, "%s?action=userScores&gameID=%d&userName=%s", LEADERBOARD_BASE_URL, LEADERBOARD_GAME_ID, name);  // &count=10 is default
     emscripten_fetch(&attr, url);
 #else
     if (userScoresFetching) return;
@@ -434,7 +429,7 @@ void FetchUserTop10(const char* name)
     curl = curl_easy_init();
     if(curl) {
         char url[256];
-        sprintf(url, "%s?action=userScores&gameID=%d&userName=%s", BASE_LEADERBOARD_URL, GAME_ID, name);
+        sprintf(url, "%s?action=userScores&gameID=%d&userName=%s", LEADERBOARD_BASE_URL, LEADERBOARD_GAME_ID, name);
         
         curl_easy_setopt(curl, CURLOPT_URL, url);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
@@ -503,7 +498,7 @@ void DrawLeaderboard()
         int lineHeight = 30;
 
         DrawText("GLOBAL TOP 10", GetScreenWidth() / 2 - MeasureText("GLOBAL TOP 10", 25) / 2, startY, 25, COLOR_TEXT_SUBTITLE);
-        for (int i = 0; i < MAX_SCORES; i++)
+        for (int i = 0; i < LEADERBOARD_MAX_SCORES; i++)
         {
             if (globalTop10[i].score > 0)
             {
@@ -515,7 +510,7 @@ void DrawLeaderboard()
 
         // Check if current player is in global top 10
         bool playerInGlobalTop10 = false;
-        for (int i = 0; i < MAX_SCORES; i++)
+        for (int i = 0; i < LEADERBOARD_MAX_SCORES; i++)
         {
             if (strcmp(globalTop10[i].name, playerName) == 0)
             {
@@ -526,10 +521,10 @@ void DrawLeaderboard()
 
         if (!playerInGlobalTop10 && userTop10[0].score > 0)
         {
-            DrawText("YOUR BEST SCORE", GetScreenWidth() / 2 - MeasureText("YOUR BEST SCORE", 25) / 2, startY + (MAX_SCORES + 2) * lineHeight, 25, COLOR_TEXT_SUBTITLE);
+            DrawText("YOUR BEST SCORE", GetScreenWidth() / 2 - MeasureText("YOUR BEST SCORE", 25) / 2, startY + (LEADERBOARD_MAX_SCORES + 2) * lineHeight, 25, COLOR_TEXT_SUBTITLE);
             DrawText(TextFormat("%s - %d", userTop10[0].name, userTop10[0].score),
                      GetScreenWidth() / 2 - MeasureText(TextFormat("%s - %d", userTop10[0].name, userTop10[0].score), 20) / 2,
-                     startY + (MAX_SCORES + 3) * lineHeight, 20, COLOR_TEXT_SUBTITLE);
+                     startY + (LEADERBOARD_MAX_SCORES + 3) * lineHeight, 20, COLOR_TEXT_SUBTITLE);
         }
 
         DrawText("Press ENTER to continue", GetScreenWidth() / 2 - MeasureText("Press ENTER to continue", 20) / 2, GetScreenHeight() - 50, 20, COLOR_TEXT_SUBTITLE);
