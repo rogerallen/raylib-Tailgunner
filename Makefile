@@ -70,6 +70,7 @@ web:
 $(TARGET): $(OBJS)
 ifeq ($(PLATFORM), web)
 	$(CC) -o $@ $^ $(CFLAGS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(LDLIBS) $(LDFLAGS) --shell-file shell.html
+	cp $(PROJECT_NAME).html index.html
 else
 	$(CC) -o $@ $^ $(CFLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS)
 endif
@@ -81,7 +82,7 @@ $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)
 
 clean:
-	rm -rf obj $(PROJECT_NAME) $(PROJECT_NAME).data $(PROJECT_NAME).html $(PROJECT_NAME).js $(PROJECT_NAME).wasm
+	rm -rf obj $(PROJECT_NAME) $(PROJECT_NAME).data $(PROJECT_NAME).html $(PROJECT_NAME).js $(PROJECT_NAME).wasm index.html
 
 run: all
 	LD_LIBRARY_PATH=$(RAYLIB_PATH)/lib ./$(PROJECT_NAME)
