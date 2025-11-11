@@ -24,7 +24,7 @@
 // - Delegates gameplay logic to subsystem modules
 //----------------------------------------------------------------------------------
 
-void InitGame(int* score, int* lives, int* wave, struct LaserManager* lmgr, struct EnemyManager* emgr, struct ForceFieldManager* ffmgr);
+void InitGame(int* score, int* lives, int* wave, struct LaserManager* lmgr, struct EnemyManager* emgr, struct ForceFieldManager* ffmgr, struct LeaderboardManager* lbmgr);
 
 //----------------------------------------------------------------------------------
 // main - Implementation Notes:
@@ -61,7 +61,10 @@ int main(void)
     ForceFieldManager ffMgr = { 0 };
 
     InitAudioDevice();
-    InitLeaderboard();
+
+    // Leaderboard manager (avoid globals)
+    LeaderboardManager lbMgr = { 0 };
+    InitLeaderboard(&lbMgr);
 
     Sound shootSound = LoadSound("resources/shoot.wav");
     Sound explosionSound = LoadSound("resources/explosion.wav");
@@ -81,7 +84,7 @@ int main(void)
             {
                 if (IsKeyPressed(KEY_ENTER) || IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
                 {
-                    InitGame(&score, &lives, &wave, &laserMgr, &enemyMgr, &ffMgr);
+                    InitGame(&score, &lives, &wave, &laserMgr, &enemyMgr, &ffMgr, &lbMgr);
                     gameState = STATE_PLAYING;
                     HideCursor();
                 }
@@ -142,7 +145,7 @@ int main(void)
             {
                 // UpdateNameInput is in leaderboard.c
                 // It returns true when the name is submitted
-                if (UpdateNameInput())
+                if (UpdateNameInput(&lbMgr))
                 {
                     nameRequired = false;
                     gameState = STATE_SUBMIT_SCORE;
@@ -150,14 +153,14 @@ int main(void)
             } break;
             case STATE_SUBMIT_SCORE:
             {
-                SubmitScore(score);
-                ResetLeaderboardFlags();
+                SubmitScore(&lbMgr, score);
+                ResetLeaderboardFlags(&lbMgr);
                 gameState = STATE_LEADERBOARD;
-                SetLeaderboardActive(true);
+                SetLeaderboardActive(&lbMgr, true);
             } break;
             case STATE_LEADERBOARD:
             {
-                UpdateLeaderboard((int *)&gameState, score);
+                UpdateLeaderboard(&lbMgr, (int *)&gameState, score);
             } break;
         }
 
@@ -196,11 +199,11 @@ int main(void)
         }
         else if (gameState == STATE_ENTER_NAME)
         {
-            DrawNameInput();
+            DrawNameInput(&lbMgr);
         }
         else if (gameState == STATE_LEADERBOARD)
         {
-            DrawLeaderboard();
+            DrawLeaderboard(&lbMgr);
         }
 
 
@@ -240,7 +243,7 @@ int main(void)
 // - Initializes all subsystems used by the gameplay loop
 // - Spawns initial enemy wave
 //----------------------------------------------------------------------------------
-void InitGame(int* score, int* lives, int* wave, struct LaserManager* lmgr, struct EnemyManager* emgr, struct ForceFieldManager* ffmgr)
+void InitGame(int* score, int* lives, int* wave, struct LaserManager* lmgr, struct EnemyManager* emgr, struct ForceFieldManager* ffmgr, struct LeaderboardManager* lbmgr)
 {
     *score = 0;
     *lives = 3;
@@ -251,5 +254,5 @@ void InitGame(int* score, int* lives, int* wave, struct LaserManager* lmgr, stru
     SpawnWave(emgr, *wave);
     InitStarfield();
     InitForceField(ffmgr);
-    ResetLeaderboardFlags();
+    ResetLeaderboardFlags(lbmgr);
 }

@@ -16,44 +16,19 @@
 
 // Internal function declarations
 
-static void FetchGlobalTop10();
-static void FetchUserTop10(const char* name);
+static void FetchGlobalTop10(LeaderboardManager* mgr);
+static void FetchUserTop10(LeaderboardManager* mgr, const char* name);
 
-static void RequestLeaderboardUpdate();
+// Called by emscripten fetch callbacks which cannot receive a user data pointer
+static void RequestLeaderboardUpdate(void);
 
 static void ParseUserScores(const char *data, size_t size, LeaderboardEntry *entries, bool *fetchedFlag, bool *fetchingFlag);
 static void ParseGlobalScores(const char *data, size_t size, LeaderboardEntry *entries, bool *fetchedFlag, bool *fetchingFlag);
 
-// Encapsulate leaderboard state in a single entity to avoid scattered globals.
-typedef struct LeaderboardEntity {
-    LeaderboardEntry globalTop10[LEADERBOARD_MAX_SCORES];
-    LeaderboardEntry userTop10[LEADERBOARD_MAX_SCORES];
-    char playerName[LEADERBOARD_NAME_LENGTH + 1];
-
-    bool isActive;
-    bool scoreSubmitted;
-    bool globalScoresFetched;
-    bool userScoresFetched;
-    bool globalScoresFetching;
-    bool userScoresFetching;
-    bool requestUpdate;
-
-    Rectangle upArrows[LEADERBOARD_NAME_LENGTH];
-    Rectangle downArrows[LEADERBOARD_NAME_LENGTH];
-    Rectangle charBoxes[LEADERBOARD_NAME_LENGTH];
-    Rectangle submitButton;
-} LeaderboardEntity;
-
-static LeaderboardEntity g_leaderboard = {
-    .playerName = { 'A', 'A', 'A', '\0' },
-    .isActive = false,
-    .scoreSubmitted = false,
-    .globalScoresFetched = false,
-    .userScoresFetched = false,
-    .globalScoresFetching = false,
-    .userScoresFetching = false,
-    .requestUpdate = false,
-};
+// Use the LeaderboardManager declared in the header.
+// A small static pointer is used only for web callbacks which cannot receive
+// a user-data pointer from emscripten_fetch handlers.
+static LeaderboardManager *s_lb_for_callbacks = NULL;
 
 #if defined(PLATFORM_WEB)
 #define PLAYER_NAME_STORAGE_KEY "tailgunner_player_name"
@@ -83,29 +58,32 @@ EM_JS(int, emscripten_local_storage_set_item_js, (const char* key_ptr, const cha
 
 static void onSubmitSuccess(emscripten_fetch_t *fetch) {
     printf("Score submitted successfully.\n");
-    g_leaderboard.scoreSubmitted = true;
+    if (s_lb_for_callbacks) s_lb_for_callbacks->scoreSubmitted = true;
     emscripten_fetch_close(fetch);
     RequestLeaderboardUpdate();
 }
 
 static void onFetchFailure(emscripten_fetch_t *fetch) {
     printf("Failed to fetch data: %s\n", fetch->statusText);
+    if (!s_lb_for_callbacks) { emscripten_fetch_close(fetch); return; }
     if (strcmp(fetch->url + strlen(fetch->url) - 8, "topScores") == 0) {
-        g_leaderboard.globalScoresFetching = false;
+        s_lb_for_callbacks->globalScoresFetching = false;
     } else {
-        g_leaderboard.userScoresFetching = false;
+        s_lb_for_callbacks->userScoresFetching = false;
     }
     emscripten_fetch_close(fetch);
 }
 
 static void onGlobalScoresSuccess(emscripten_fetch_t *fetch) {
     printf("Global scores fetched successfully.\n");
-    ParseGlobalScores(fetch->data, fetch->numBytes, g_leaderboard.globalTop10, &g_leaderboard.globalScoresFetched, &g_leaderboard.globalScoresFetching);
+    if (!s_lb_for_callbacks) return;
+    ParseGlobalScores(fetch->data, fetch->numBytes, s_lb_for_callbacks->globalTop10, &s_lb_for_callbacks->globalScoresFetched, &s_lb_for_callbacks->globalScoresFetching);
 }
 
 static void onUserScoresSuccess(emscripten_fetch_t *fetch) {
     printf("User scores fetched successfully.\n");
-    ParseUserScores(fetch->data, fetch->numBytes, g_leaderboard.userTop10, &g_leaderboard.userScoresFetched, &g_leaderboard.userScoresFetching);
+    if (!s_lb_for_callbacks) return;
+    ParseUserScores(fetch->data, fetch->numBytes, s_lb_for_callbacks->userTop10, &s_lb_for_callbacks->userScoresFetched, &s_lb_for_callbacks->userScoresFetching);
 }
 #else
 // Structure to hold memory for libcurl response
@@ -293,10 +271,10 @@ static void ParseGlobalScores(const char *data, size_t size, LeaderboardEntry *e
     *fetchingFlag = false;
 }
 
-static void SavePlayerName(const char* name)
+static void SavePlayerName(LeaderboardManager* mgr, const char* name)
 {
 #if defined(PLATFORM_WEB)
-    emscripten_local_storage_set_item_js(PLAYER_NAME_STORAGE_KEY, g_leaderboard.playerName);
+    emscripten_local_storage_set_item_js(PLAYER_NAME_STORAGE_KEY, mgr->playerName);
 #else
     FILE* f = fopen(GetConfigPath(), "w");
     if (f != NULL) {
@@ -306,36 +284,39 @@ static void SavePlayerName(const char* name)
 #endif
 }
 
-static void LoadPlayerName()
+static void LoadPlayerName(LeaderboardManager* mgr)
 {
 #if defined(PLATFORM_WEB)
     char *storedName = emscripten_local_storage_get_item_js(PLAYER_NAME_STORAGE_KEY);
     if (storedName != NULL)
     {
-        strncpy(g_leaderboard.playerName, storedName, LEADERBOARD_NAME_LENGTH);
-        g_leaderboard.playerName[LEADERBOARD_NAME_LENGTH] = '\0';
+        strncpy(mgr->playerName, storedName, LEADERBOARD_NAME_LENGTH);
+        mgr->playerName[LEADERBOARD_NAME_LENGTH] = '\0';
         free(storedName);
     }
 #else
     FILE* f = fopen(GetConfigPath(), "r");
     if (f != NULL) {
-        if (fgets(g_leaderboard.playerName, sizeof(g_leaderboard.playerName), f) != NULL) {
+        if (fgets(mgr->playerName, sizeof(mgr->playerName), f) != NULL) {
             // remove newline character
-            g_leaderboard.playerName[strcspn(g_leaderboard.playerName, "\n")] = 0;
+            mgr->playerName[strcspn(mgr->playerName, "\n")] = 0;
         }
         fclose(f);
     }
 #endif
 }
 
-static void FetchGlobalTop10()
+static void FetchGlobalTop10(LeaderboardManager* mgr)
 {
     char url[256];
     sprintf(url, "%s?action=topScores&gameID=%d", LEADERBOARD_BASE_URL, LEADERBOARD_GAME_ID);  // &count=10 is default
 
 #if defined(PLATFORM_WEB)
-    if (g_leaderboard.globalScoresFetching) return;
-    g_leaderboard.globalScoresFetching = true;
+    if (mgr->globalScoresFetching) return;
+    mgr->globalScoresFetching = true;
+
+    // arrange for callbacks to reference this manager
+    s_lb_for_callbacks = mgr;
 
     emscripten_fetch_attr_t attr;
     emscripten_fetch_attr_init(&attr);
@@ -346,29 +327,32 @@ static void FetchGlobalTop10()
 
     emscripten_fetch(&attr, url);
 #else
-    if (g_leaderboard.globalScoresFetching) return;
-    g_leaderboard.globalScoresFetching = true;
+    if (mgr->globalScoresFetching) return;
+    mgr->globalScoresFetching = true;
 
     MemoryStruct chunk;
     if (!CurlGetToMemory(url, &chunk)) {
         fprintf(stderr, "Failed to fetch global scores from URL: %s\n", url);
-        g_leaderboard.globalScoresFetching = false;
+        mgr->globalScoresFetching = false;
     } else {
         printf("Global scores fetched successfully.\n");
-        ParseGlobalScores(chunk.memory, chunk.size, g_leaderboard.globalTop10, &g_leaderboard.globalScoresFetched, &g_leaderboard.globalScoresFetching);
+        ParseGlobalScores(chunk.memory, chunk.size, mgr->globalTop10, &mgr->globalScoresFetched, &mgr->globalScoresFetching);
         free(chunk.memory);
     }
 #endif
 }
 
-static void FetchUserTop10(const char* name)
+static void FetchUserTop10(LeaderboardManager* mgr, const char* name)
 {
     char url[256];
     sprintf(url, "%s?action=userScores&gameID=%d&userName=%s", LEADERBOARD_BASE_URL, LEADERBOARD_GAME_ID, name);  // &count=10 is default
 
 #if defined(PLATFORM_WEB)
-    if (g_leaderboard.userScoresFetching) return;
-    g_leaderboard.userScoresFetching = true;
+    if (mgr->userScoresFetching) return;
+    mgr->userScoresFetching = true;
+
+    // arrange for callbacks to reference this manager
+    s_lb_for_callbacks = mgr;
 
     emscripten_fetch_attr_t attr;
     emscripten_fetch_attr_init(&attr);
@@ -379,16 +363,16 @@ static void FetchUserTop10(const char* name)
 
     emscripten_fetch(&attr, url);
 #else
-    if (g_leaderboard.userScoresFetching) return;
-    g_leaderboard.userScoresFetching = true;
+    if (mgr->userScoresFetching) return;
+    mgr->userScoresFetching = true;
 
     MemoryStruct chunk;
     if (!CurlGetToMemory(url, &chunk)) {
         fprintf(stderr, "Failed to fetch user scores from URL: %s\n", url);
-        g_leaderboard.userScoresFetching = false;
+        mgr->userScoresFetching = false;
     } else {
         printf("User scores fetched successfully.\n");
-        ParseUserScores(chunk.memory, chunk.size, g_leaderboard.userTop10, &g_leaderboard.userScoresFetched, &g_leaderboard.userScoresFetching);
+        ParseUserScores(chunk.memory, chunk.size, mgr->userTop10, &mgr->userScoresFetched, &mgr->userScoresFetching);
         free(chunk.memory);
     }
 #endif
@@ -396,20 +380,20 @@ static void FetchUserTop10(const char* name)
 
 static void RequestLeaderboardUpdate()
 {
-    g_leaderboard.requestUpdate = true;
+    if (s_lb_for_callbacks) s_lb_for_callbacks->requestUpdate = true;
 }
 
 // ================================================================================
 // Public functions
 // ================================================================================
 
-void DrawLeaderboard()
+void DrawLeaderboard(LeaderboardManager* mgr)
 {
-    if (!g_leaderboard.isActive) return;
+    if (!mgr || !mgr->isActive) return;
 
     DrawText("Leaderboard", GetScreenWidth() / 2 - MeasureText("Leaderboard", 40) / 2, 50, 40, COLOR_TEXT_TITLE);
 
-    if (g_leaderboard.globalScoresFetched && g_leaderboard.userScoresFetched)
+    if (mgr->globalScoresFetched && mgr->userScoresFetched)
     {
         int startY = 120;
         int lineHeight = 30;
@@ -417,10 +401,10 @@ void DrawLeaderboard()
         DrawText("GLOBAL TOP 10", GetScreenWidth() / 2 - MeasureText("GLOBAL TOP 10", 25) / 2, startY, 25, COLOR_TEXT_SUBTITLE);
         for (int i = 0; i < LEADERBOARD_MAX_SCORES; i++)
         {
-            if (g_leaderboard.globalTop10[i].score > 0)
+            if (mgr->globalTop10[i].score > 0)
             {
-                DrawText(TextFormat("%d. %s - %d", i + 1, g_leaderboard.globalTop10[i].name, g_leaderboard.globalTop10[i].score),
-                         GetScreenWidth() / 2 - MeasureText(TextFormat("%d. %s - %d", i + 1, g_leaderboard.globalTop10[i].name, g_leaderboard.globalTop10[i].score), 20) / 2,
+                DrawText(TextFormat("%d. %s - %d", i + 1, mgr->globalTop10[i].name, mgr->globalTop10[i].score),
+                         GetScreenWidth() / 2 - MeasureText(TextFormat("%d. %s - %d", i + 1, mgr->globalTop10[i].name, mgr->globalTop10[i].score), 20) / 2,
                          startY + (i + 1) * lineHeight, 20, COLOR_TEXT_LEADERBOARD);
             }
         }
@@ -429,18 +413,18 @@ void DrawLeaderboard()
         bool playerInGlobalTop10 = false;
         for (int i = 0; i < LEADERBOARD_MAX_SCORES; i++)
         {
-            if (strcmp(g_leaderboard.globalTop10[i].name, g_leaderboard.playerName) == 0)
+            if (strcmp(mgr->globalTop10[i].name, mgr->playerName) == 0)
             {
                 playerInGlobalTop10 = true;
                 break;
             }
         }
 
-        if (!playerInGlobalTop10 && g_leaderboard.userTop10[0].score > 0)
+        if (!playerInGlobalTop10 && mgr->userTop10[0].score > 0)
         {
             DrawText("YOUR BEST SCORE", GetScreenWidth() / 2 - MeasureText("YOUR BEST SCORE", 25) / 2, startY + (LEADERBOARD_MAX_SCORES + 2) * lineHeight, 25, COLOR_TEXT_SUBTITLE);
-            DrawText(TextFormat("%s - %d", g_leaderboard.userTop10[0].name, g_leaderboard.userTop10[0].score),
-                     GetScreenWidth() / 2 - MeasureText(TextFormat("%s - %d", g_leaderboard.userTop10[0].name, g_leaderboard.userTop10[0].score), 20) / 2,
+            DrawText(TextFormat("%s - %d", mgr->userTop10[0].name, mgr->userTop10[0].score),
+                     GetScreenWidth() / 2 - MeasureText(TextFormat("%s - %d", mgr->userTop10[0].name, mgr->userTop10[0].score), 20) / 2,
                      startY + (LEADERBOARD_MAX_SCORES + 3) * lineHeight, 20, COLOR_TEXT_SUBTITLE);
         }
 
@@ -452,50 +436,68 @@ void DrawLeaderboard()
     }
 }
 
-void DrawNameInput()
+void DrawNameInput(LeaderboardManager* mgr)
 {
     DrawText("Enter Your Initials", GetScreenWidth() / 2 - MeasureText("Enter Your Initials", 30) / 2, GetScreenHeight() / 2 - 100, 30, COLOR_TEXT_TITLE);
 
     for (int i = 0; i < LEADERBOARD_NAME_LENGTH; i++)
     {
-        DrawRectangleRec(g_leaderboard.charBoxes[i], COLOR_INITIAL_BOX);
-        DrawText(TextFormat("%c", g_leaderboard.playerName[i]), g_leaderboard.charBoxes[i].x + 12, g_leaderboard.charBoxes[i].y + 5, 30, COLOR_BACKGROUND);
-        DrawTriangle((Vector2){ g_leaderboard.upArrows[i].x + 20, g_leaderboard.upArrows[i].y }, (Vector2){ g_leaderboard.upArrows[i].x, g_leaderboard.upArrows[i].y + 20 }, (Vector2){ g_leaderboard.upArrows[i].x + 40, g_leaderboard.upArrows[i].y + 20 }, COLOR_INITIAL_BOX);
-        DrawTriangle((Vector2){ g_leaderboard.downArrows[i].x + 20, g_leaderboard.downArrows[i].y + 20 }, (Vector2){ g_leaderboard.downArrows[i].x + 40, g_leaderboard.downArrows[i].y }, (Vector2){ g_leaderboard.downArrows[i].x, g_leaderboard.downArrows[i].y }, COLOR_INITIAL_BOX);
+        DrawRectangleRec(mgr->charBoxes[i], COLOR_INITIAL_BOX);
+        DrawText(TextFormat("%c", mgr->playerName[i]), mgr->charBoxes[i].x + 12, mgr->charBoxes[i].y + 5, 30, COLOR_BACKGROUND);
+        DrawTriangle((Vector2){ mgr->upArrows[i].x + 20, mgr->upArrows[i].y }, (Vector2){ mgr->upArrows[i].x, mgr->upArrows[i].y + 20 }, (Vector2){ mgr->upArrows[i].x + 40, mgr->upArrows[i].y + 20 }, COLOR_INITIAL_BOX);
+        DrawTriangle((Vector2){ mgr->downArrows[i].x + 20, mgr->downArrows[i].y + 20 }, (Vector2){ mgr->downArrows[i].x + 40, mgr->downArrows[i].y }, (Vector2){ mgr->downArrows[i].x, mgr->downArrows[i].y }, COLOR_INITIAL_BOX);
     }
 
-    DrawRectangleRec(g_leaderboard.submitButton, COLOR_INITIAL_BOX);
-    DrawText("Submit", g_leaderboard.submitButton.x + 30, g_leaderboard.submitButton.y + 5, 20, COLOR_BACKGROUND);
+    DrawRectangleRec(mgr->submitButton, COLOR_INITIAL_BOX);
+    DrawText("Submit", mgr->submitButton.x + 30, mgr->submitButton.y + 5, 20, COLOR_BACKGROUND);
 }
 
-void InitLeaderboard()
+void InitLeaderboard(LeaderboardManager* mgr)
 {
+    if (!mgr) return;
+    // set defaults
+    mgr->playerName[0] = 'A'; mgr->playerName[1] = 'A'; mgr->playerName[2] = 'A'; mgr->playerName[3] = '\0';
+    mgr->isActive = false;
+    mgr->scoreSubmitted = false;
+    mgr->globalScoresFetched = false;
+    mgr->userScoresFetched = false;
+    mgr->globalScoresFetching = false;
+    mgr->userScoresFetching = false;
+    mgr->requestUpdate = false;
+
     for (int i = 0; i < LEADERBOARD_NAME_LENGTH; i++)
     {
-        g_leaderboard.charBoxes[i] = (Rectangle){ GetScreenWidth() / 2 - 70 + i * 50, GetScreenHeight() / 2 - 20, 40, 40 };
-        g_leaderboard.upArrows[i] = (Rectangle){ g_leaderboard.charBoxes[i].x, g_leaderboard.charBoxes[i].y - 30, 40, 20 };
-        g_leaderboard.downArrows[i] = (Rectangle){ g_leaderboard.charBoxes[i].x, g_leaderboard.charBoxes[i].y + 50, 40, 20 };
+        mgr->charBoxes[i] = (Rectangle){ GetScreenWidth() / 2 - 70 + i * 50, GetScreenHeight() / 2 - 20, 40, 40 };
+        mgr->upArrows[i] = (Rectangle){ mgr->charBoxes[i].x, mgr->charBoxes[i].y - 30, 40, 20 };
+        mgr->downArrows[i] = (Rectangle){ mgr->charBoxes[i].x, mgr->charBoxes[i].y + 50, 40, 20 };
     }
-    g_leaderboard.submitButton = (Rectangle){ GetScreenWidth() / 2 - 60, GetScreenHeight() / 2 + 80, 120, 30 };
-    LoadPlayerName();
+    mgr->submitButton = (Rectangle){ GetScreenWidth() / 2 - 60, GetScreenHeight() / 2 + 80, 120, 30 };
+
+    // Save pointer for emscripten callbacks
+    s_lb_for_callbacks = mgr;
+
+    LoadPlayerName(mgr);
 }
 
-void ResetLeaderboardFlags()
+void ResetLeaderboardFlags(LeaderboardManager* mgr)
 {
-    g_leaderboard.scoreSubmitted = false;
-    g_leaderboard.globalScoresFetched = false;
-    g_leaderboard.userScoresFetched = false;
+    if (!mgr) return;
+    mgr->scoreSubmitted = false;
+    mgr->globalScoresFetched = false;
+    mgr->userScoresFetched = false;
 }
 
-void SetLeaderboardActive(bool active)
+void SetLeaderboardActive(LeaderboardManager* mgr, bool active)
 {
-    g_leaderboard.isActive = active;
+    if (!mgr) return;
+    mgr->isActive = active;
 }
 
-void SubmitScore(int score)
+void SubmitScore(LeaderboardManager* mgr, int score)
 {
     char url[256];
-    sprintf(url, "%s?action=newScore&gameID=%d&userName=%s&score=%d", LEADERBOARD_BASE_URL, LEADERBOARD_GAME_ID, g_leaderboard.playerName, score);
+    if (!mgr) return;
+    sprintf(url, "%s?action=newScore&gameID=%d&userName=%s&score=%d", LEADERBOARD_BASE_URL, LEADERBOARD_GAME_ID, mgr->playerName, score);
 
 #if defined(PLATFORM_WEB)
     emscripten_fetch_attr_t attr;
@@ -511,51 +513,53 @@ void SubmitScore(int score)
         fprintf(stderr, "Score submission failed for URL: %s\n", url);
     } else {
         printf("Score submitted successfully.\n");
-        g_leaderboard.scoreSubmitted = true;
+        mgr->scoreSubmitted = true;
+        mgr->requestUpdate = true;
         RequestLeaderboardUpdate();
     }
 #endif
 }
 
-void UpdateLeaderboard(int *gameState, int score)
+void UpdateLeaderboard(LeaderboardManager* mgr, int *gameState, int score)
 {
-    if (!g_leaderboard.isActive) return;
+    if (!mgr || !mgr->isActive) return;
 
-    if (g_leaderboard.requestUpdate)
+    if (mgr->requestUpdate)
     {
-        ResetLeaderboardFlags();
-        g_leaderboard.requestUpdate = false;
+        ResetLeaderboardFlags(mgr);
+        mgr->requestUpdate = false;
     }
 
-    if (!g_leaderboard.globalScoresFetched && !g_leaderboard.globalScoresFetching) FetchGlobalTop10();
-    if (!g_leaderboard.userScoresFetched && !g_leaderboard.userScoresFetching) FetchUserTop10(g_leaderboard.playerName);
+    if (!mgr->globalScoresFetched && !mgr->globalScoresFetching) FetchGlobalTop10(mgr);
+    if (!mgr->userScoresFetched && !mgr->userScoresFetching) FetchUserTop10(mgr, mgr->playerName);
 
     if (IsKeyPressed(KEY_ENTER) || IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
     {
-        SetLeaderboardActive(false);
+        SetLeaderboardActive(mgr, false);
         *gameState = STATE_START;
     }
 }
 
-bool UpdateNameInput()
+bool UpdateNameInput(LeaderboardManager* mgr)
 {
+    if (!mgr) return false;
     for (int i = 0; i < LEADERBOARD_NAME_LENGTH; i++)
     {
-        if (CheckCollisionPointRec(GetMousePosition(), g_leaderboard.upArrows[i]) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        if (CheckCollisionPointRec(GetMousePosition(), mgr->upArrows[i]) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
-            g_leaderboard.playerName[i]++;
-            if (g_leaderboard.playerName[i] > 'Z') g_leaderboard.playerName[i] = 'A';
+            mgr->playerName[i]++;
+            if (mgr->playerName[i] > 'Z') mgr->playerName[i] = 'A';
         }
-        if (CheckCollisionPointRec(GetMousePosition(), g_leaderboard.downArrows[i]) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        if (CheckCollisionPointRec(GetMousePosition(), mgr->downArrows[i]) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
-            g_leaderboard.playerName[i]--;
-            if (g_leaderboard.playerName[i] < 'A') g_leaderboard.playerName[i] = 'Z';
+            mgr->playerName[i]--;
+            if (mgr->playerName[i] < 'A') mgr->playerName[i] = 'Z';
         }
     }
 
-    if (CheckCollisionPointRec(GetMousePosition(), g_leaderboard.submitButton) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+    if (CheckCollisionPointRec(GetMousePosition(), mgr->submitButton) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
     {
-        SavePlayerName(g_leaderboard.playerName);
+        SavePlayerName(mgr, mgr->playerName);
         return true;
     }
     return false;
