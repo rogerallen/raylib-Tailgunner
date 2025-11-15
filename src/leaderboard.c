@@ -448,7 +448,7 @@ void DrawNameInput(LeaderboardManager* mgr)
         DrawTriangle((Vector2){ mgr->downArrows[i].x + 20, mgr->downArrows[i].y + 20 }, (Vector2){ mgr->downArrows[i].x + 40, mgr->downArrows[i].y }, (Vector2){ mgr->downArrows[i].x, mgr->downArrows[i].y }, COLOR_INITIAL_BOX);
     }
 
-    DrawRectangleRec(mgr->submitButton, COLOR_INITIAL_BOX);
+    DrawRectangleRec(mgr->submitButton, COLOR_BUTTON_BOX);
     DrawText("Submit", mgr->submitButton.x + 30, mgr->submitButton.y + 5, 20, COLOR_BACKGROUND);
 }
 

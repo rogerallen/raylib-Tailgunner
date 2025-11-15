@@ -2,7 +2,7 @@
 #define CONFIG_H
 
 // Version for display in title screen
-#define GAME_VERSION "v1.1"
+#define GAME_VERSION "v1.2"
 #define GAME_TITLE "TAILGUNNER"
 
 // Leaderboard configuration
@@ -88,6 +88,7 @@
 #define COLOR_FORCEFIELD_UI_READY        VGREEN
 #define COLOR_FORCEFIELD_UI_CHARGING     VGREEN
 #define COLOR_INITIAL_BOX                VGREEN
+#define COLOR_BUTTON_BOX                 VGREEN
 #endif
 
 
