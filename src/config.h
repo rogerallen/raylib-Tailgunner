@@ -14,6 +14,7 @@
 #define LEADERBOARD_NAME_LENGTH 3
 
 // Gameplay tuning constants
+#define POINTS_FOR_EXTRA_LIFE 50
 
 // Number of enemies spawned per wave
 #define WAVE_SIZE 5

@@ -51,6 +51,7 @@ int main(void)
     camera.projection = CAMERA_PERSPECTIVE;
 
     int score = 0;
+    int score_at_last_life = 0;
     int lives = 0;
     int wave = 0;
     bool nameRequired = true;
@@ -72,6 +73,7 @@ int main(void)
     Sound forceFailSound = LoadSound("resources/forcefail.wav");
     Sound forceFieldHitSound = LoadSound("resources/bounce.wav");
     Sound lostLifeSound = LoadSound("resources/past.wav");
+    Sound extraLifeSound = LoadSound("resources/forcefield.wav");
 
     int frameCount = 0;
     int touch_count_last_frame = 0;
@@ -131,7 +133,14 @@ int main(void)
                 {
                     gameState = STATE_GAME_OVER;
                     ShowCursor();
-                }   
+                }
+
+                // Check for extra life
+                if (score - score_at_last_life >= POINTS_FOR_EXTRA_LIFE) {
+                    lives++;
+                    score_at_last_life += POINTS_FOR_EXTRA_LIFE;
+                    PlaySound(extraLifeSound);
+                }
 
             } break;
             case STATE_GAME_OVER:
