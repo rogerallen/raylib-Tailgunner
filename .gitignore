@@ -9,3 +9,5 @@ tailgunner*.zip
 obj
 # dev environment
 .vscode
+# things to save outside of git
+save/
