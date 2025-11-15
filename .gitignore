@@ -5,6 +5,9 @@ tailgunner.data
 tailgunner.html
 tailgunner.js
 tailgunner.wasm
+tailgunner*.zip
 obj
 # dev environment
 .vscode
+# things to save outside of git
+save/

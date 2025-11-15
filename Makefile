@@ -3,6 +3,9 @@
 # Project name
 PROJECT_NAME ?= tailgunner
 
+# Zip number
+ZIP_NUMBER ?= 11
+
 # Directories
 SRC_DIR = src
 
@@ -89,5 +92,9 @@ run: all
 
 webserve:
 	python3 -m http.server 8000
+
+zip: 
+	rm -f tailgunner$(ZIP_NUMBER).zip
+	zip -9 tailgunner$(ZIP_NUMBER).zip index.html tailgunner.data tailgunner.js tailgunner.wasm
 
 -include $(OBJS:.o=.d)
