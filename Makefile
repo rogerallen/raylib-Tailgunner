@@ -4,7 +4,7 @@
 PROJECT_NAME ?= tailgunner
 
 # Zip number
-ZIP_NUMBER ?= 11
+ZIP_NUMBER ?= 12
 
 # Directories
 SRC_DIR = src
