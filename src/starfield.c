@@ -1,16 +1,16 @@
-/*******************************************************************************************
- *
- *   starfield.c - Background starfield effect implementation
- *
- *   See starfield.h for module interface documentation.
- *
- *   Implementation notes:
- *   - Uses small 3D spheres for star representation
- *   - Stars move at constant speed independent of frame rate
- *   - Stars reset to front when passing behind camera
- *   - Randomized alpha values create depth effect
- *
- *******************************************************************************************/
+//================================================================================================
+//
+//   starfield.c - Background starfield effect implementation
+//
+//   See starfield.h for module interface documentation.
+//
+//   Implementation notes:
+//   - Uses small 3D spheres for star representation
+//   - Stars move at constant speed independent of frame rate
+//   - Stars reset to front when passing behind camera
+//   - Randomized alpha values create depth effect
+//
+//================================================================================================
 
 #include "starfield.h"
 

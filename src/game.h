@@ -1,11 +1,10 @@
-
-/*******************************************************************************************
- *
- *   game.h - Game state management for Tailgunner
- *
- *   Defines the main game states and transitions between them.
- *
- *******************************************************************************************/
+//================================================================================================
+//
+//   game.h - Game state management for Tailgunner
+//
+//   Defines the main game states and transitions between them.
+//
+//================================================================================================
 
 #ifndef GAME_H
 #define GAME_H

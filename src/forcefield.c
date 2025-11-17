@@ -1,16 +1,16 @@
-/*******************************************************************************************
- *
- *   forcefield.c - Force field defensive system implementation
- *
- *   See forcefield.h for module interface documentation.
- *
- *   Implementation notes:
- *   - Uses state machine (ready/active/cooldown) for field management
- *   - Repels enemies within FORCE_FIELD_RADIUS when active
- *   - Visual representation as 2D grid overlay
- *   - Charge system prevents continuous activation
- *
- *******************************************************************************************/
+//================================================================================================
+//
+//   forcefield.c - Force field defensive system implementation
+//
+//   See forcefield.h for module interface documentation.
+//
+//   Implementation notes:
+//   - Uses state machine (ready/active/cooldown) for field management
+//   - Repels enemies within FORCE_FIELD_RADIUS when active
+//   - Visual representation as 2D grid overlay
+//   - Charge system prevents continuous activation
+//
+//================================================================================================
 
 #include "forcefield.h"
 #include "enemy.h"

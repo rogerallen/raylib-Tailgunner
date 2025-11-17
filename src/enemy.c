@@ -1,10 +1,10 @@
-/*******************************************************************************************
- *
- *   enemy.c - Enemy implementation
- *
- *   See enemy.h for module interface documentation.
- *
- *******************************************************************************************/
+//================================================================================================
+//
+//   enemy.c - Enemy implementation
+//
+//   See enemy.h for module interface documentation.
+//
+//================================================================================================
 
 #include "enemy.h"
 #include "config.h"
@@ -19,29 +19,23 @@
 // Internal Function Declarations
 //----------------------------------------------------------------------------------
 
-/**
- * Render a single enemy ship using line-based 3D geometry
- *
- * @param enemy The enemy to render, must be active
- */
+// Render a single enemy ship using line-based 3D geometry
+//
+// @param enemy The enemy to render, must be active
 static void DrawEnemyShip(const Enemy *enemy);
 
-/**
- * Calculate the normalized tangent vector at point t along a cubic Bezier curve
- *
- * @param p0,p1,p2,p3 Control points defining the curve
- * @param t Parameter value along curve [0,1]
- * @return Normalized tangent vector (or forward vector if tangent is zero)
- */
+// Calculate the normalized tangent vector at point t along a cubic Bezier curve
+//
+// @param p0,p1,p2,p3 Control points defining the curve
+// @param t Parameter value along curve [0,1]
+// @return Normalized tangent vector (or forward vector if tangent is zero)
 static Vector3 GetCubicBezierTangent(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t);
 
-/**
- * Calculate a point on a cubic Bezier curve using De Casteljau's algorithm
- *
- * @param p0,p1,p2,p3 Control points defining the curve
- * @param t Parameter value along curve [0,1]
- * @return Position vector of point on curve
- */
+// Calculate a point on a cubic Bezier curve using De Casteljau's algorithm
+//
+// @param p0,p1,p2,p3 Control points defining the curve
+// @param t Parameter value along curve [0,1]
+// @return Position vector of point on curve
 static Vector3 GetCubicBezierPoint(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
 {
     Vector3 result;

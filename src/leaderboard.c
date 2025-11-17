@@ -114,7 +114,7 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
 
     char *ptr = realloc(mem->memory, mem->size + realsize + 1);
     if (ptr == NULL) {
-        /* out of memory! */
+        // out of memory!
         printf("not enough memory (realloc returned NULL)\n");
         return 0;
     }

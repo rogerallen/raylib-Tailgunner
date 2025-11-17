@@ -1,15 +1,15 @@
-/*******************************************************************************************
- *
- *   laser.c - Laser weapon system implementation
- *
- *   See laser.h for module interface documentation.
- *
- *   Implementation notes:
- *   - Uses ray-sphere intersection for enemy hit detection
- *   - Beams start slightly offset (left/right) from camera for visual effect
- *   - Overwrites oldest beam if all slots are active when firing
- *
- *******************************************************************************************/
+//================================================================================================
+//
+//   laser.c - Laser weapon system implementation
+//
+//   See laser.h for module interface documentation.
+//
+//   Implementation notes:
+//   - Uses ray-sphere intersection for enemy hit detection
+//   - Beams start slightly offset (left/right) from camera for visual effect
+//   - Overwrites oldest beam if all slots are active when firing
+//
+//================================================================================================
 
 #include "laser.h"
 #include "config.h"

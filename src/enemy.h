@@ -1,11 +1,11 @@
-/*******************************************************************************************
- *
- *   enemy.h - Enemy management and rendering for Tailgunner
- *
- *   Handles enemy spawning, movement along Bezier curves, state management, and rendering.
- *   Enemies follow curved paths and can be repelled by the force field.
- *
- *******************************************************************************************/
+//================================================================================================
+//
+//   enemy.h - Enemy management and rendering for Tailgunner
+//
+//   Handles enemy spawning, movement along Bezier curves, state management, and rendering.
+//   Enemies follow curved paths and can be repelled by the force field.
+//
+//================================================================================================
 
 #ifndef ENEMY_H
 #define ENEMY_H
@@ -46,35 +46,21 @@ typedef struct EnemyManager {
 // Enemy Module Functions
 //----------------------------------------------------------------------------------
 
-/**
- * Initialize the enemy system, resetting all enemies to inactive state
- */
-// Initialize the enemy manager (resets all enemies)
+// Initialize the enemy system, resetting all enemies to inactive state
 void InitEnemies(EnemyManager *mgr);
 
-/**
- * Update all active enemies, handling movement and state changes
- *
- * @param lives Pointer to player's life count, decremented when enemies escape
- * @param wave Pointer to current wave number, incremented when wave is cleared
- */
 // Update all active enemies, handling movement and state changes
-// @param mgr Enemy manager instance
+//
+// @param lives Pointer to player's life count, decremented when enemies escape
+// @param wave Pointer to current wave number, incremented when wave is cleared
 void UpdateEnemies(EnemyManager *mgr, int *lives, int *wave);
 
-/**
- * Render all active enemies in 3D space
- */
 // Render all active enemies in 3D space
 void DrawEnemies(EnemyManager *mgr);
 
-/**
- * Spawn a new wave of enemies with curved attack paths
- *
- * @param wave Current wave number (affects enemy movement speed)
- */
 // Spawn a new wave of enemies with curved attack paths
-// @param mgr Enemy manager instance
+//
+// @param wave Current wave number (affects enemy movement speed)
 void SpawnWave(EnemyManager *mgr, int wave);
 
 #endif // ENEMY_H
