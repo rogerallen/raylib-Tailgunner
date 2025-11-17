@@ -1,8 +1,8 @@
 #ifndef LEADERBOARD_H
 #define LEADERBOARD_H
 
-#include "raylib.h"
 #include "config.h"
+#include "raylib.h"
 
 typedef struct {
     char name[LEADERBOARD_NAME_LENGTH + 1];
@@ -31,13 +31,13 @@ typedef struct LeaderboardManager {
 
 // Public Functions
 
-void DrawLeaderboard(LeaderboardManager* mgr);
-void DrawNameInput(LeaderboardManager* mgr);
-void InitLeaderboard(LeaderboardManager* mgr);
-void ResetLeaderboardFlags(LeaderboardManager* mgr);
-void SetLeaderboardActive(LeaderboardManager* mgr, bool active);
-void SubmitScore(LeaderboardManager* mgr, int score);
-void UpdateLeaderboard(LeaderboardManager* mgr, int *gameState, int score);
-bool UpdateNameInput(LeaderboardManager* mgr);
+void DrawLeaderboard(LeaderboardManager *mgr);
+void DrawNameInput(LeaderboardManager *mgr);
+void InitLeaderboard(LeaderboardManager *mgr);
+void ResetLeaderboardFlags(LeaderboardManager *mgr);
+void SetLeaderboardActive(LeaderboardManager *mgr, bool active);
+void SubmitScore(LeaderboardManager *mgr, int score);
+void UpdateLeaderboard(LeaderboardManager *mgr, int *gameState, int score);
+bool UpdateNameInput(LeaderboardManager *mgr);
 
 #endif // LEADERBOARD_H

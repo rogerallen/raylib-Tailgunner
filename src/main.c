@@ -2,15 +2,14 @@
 #if defined(PLATFORM_WEB)
 #include <emscripten/emscripten.h>
 #endif
-#include "enemy.h"
-#include "game.h"
-#include "starfield.h"
-#include "laser.h"
-#include "forcefield.h"
-#include "leaderboard.h"
 #include "config.h"
+#include "enemy.h"
+#include "forcefield.h"
+#include "game.h"
+#include "laser.h"
+#include "leaderboard.h"
+#include "starfield.h"
 #include <stdio.h>
-
 
 //----------------------------------------------------------------------------------
 // main.c - Game entry and orchestration
@@ -24,7 +23,8 @@
 // - Delegates gameplay logic to subsystem modules
 //----------------------------------------------------------------------------------
 
-void InitGame(int* score, int* lives, int* wave, struct LaserManager* lmgr, struct EnemyManager* emgr, struct ForceFieldManager* ffmgr, struct LeaderboardManager* lbmgr);
+void InitGame(int *score, int *lives, int *wave, struct LaserManager *lmgr, struct EnemyManager *emgr,
+              struct ForceFieldManager *ffmgr, struct LeaderboardManager *lbmgr);
 
 //----------------------------------------------------------------------------------
 // main - Implementation Notes:
@@ -43,10 +43,10 @@ int main(void)
     SetTargetFPS(60);
 
     GameState gameState = STATE_START;
-    Camera camera = { 0 };
-    camera.position = (Vector3){ 0.0f, 0.0f, 0.0f };
-    camera.target = (Vector3){ 0.0f, 0.0f, -1.0f };
-    camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };
+    Camera camera = {0};
+    camera.position = (Vector3){0.0f, 0.0f, 0.0f};
+    camera.target = (Vector3){0.0f, 0.0f, -1.0f};
+    camera.up = (Vector3){0.0f, 1.0f, 0.0f};
     camera.fovy = 45.0f;
     camera.projection = CAMERA_PERSPECTIVE;
 
@@ -57,14 +57,14 @@ int main(void)
     bool nameRequired = true;
 
     // Encapsulated managers (avoid globals)
-    LaserManager laserMgr = { 0 };
-    EnemyManager enemyMgr = { 0 };
-    ForceFieldManager ffMgr = { 0 };
+    LaserManager laserMgr = {0};
+    EnemyManager enemyMgr = {0};
+    ForceFieldManager ffMgr = {0};
 
     InitAudioDevice();
 
     // Leaderboard manager (avoid globals)
-    LeaderboardManager lbMgr = { 0 };
+    LeaderboardManager lbMgr = {0};
     InitLeaderboard(&lbMgr);
 
     Sound shootSound = LoadSound("resources/shoot.wav");
@@ -75,144 +75,132 @@ int main(void)
     Sound lostLifeSound = LoadSound("resources/past.wav");
     Sound extraLifeSound = LoadSound("resources/forcefield.wav");
 
-    Rectangle showTop10Button = (Rectangle){ GetScreenWidth() / 2 - 60, GetScreenHeight() / 2 + 80, 120, 30 };
-    Rectangle showHelpButton = (Rectangle){ GetScreenWidth() / 2 - 60, GetScreenHeight() / 2 + 120, 120, 30 };
+    Rectangle showTop10Button = (Rectangle){GetScreenWidth() / 2 - 60, GetScreenHeight() / 2 + 80, 120, 30};
+    Rectangle showHelpButton = (Rectangle){GetScreenWidth() / 2 - 60, GetScreenHeight() / 2 + 120, 120, 30};
 
     int frameCount = 0;
     int touch_count_last_frame = 0;
     double previousTime = GetTime();
 
-    while (!WindowShouldClose())
-    {
-        switch (gameState)
-        {
-            case STATE_START:
-            {
-                if (CheckCollisionPointRec(GetMousePosition(), showTop10Button) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-                {
-                    ResetLeaderboardFlags(&lbMgr);
-                    gameState = STATE_LEADERBOARD;
-                    SetLeaderboardActive(&lbMgr, true);
-                }
-                else if (CheckCollisionPointRec(GetMousePosition(), showHelpButton) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-                {
-                    gameState = STATE_HELP;
-                }
-                else if (IsKeyPressed(KEY_ENTER) || IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-                {
-                    InitGame(&score, &lives, &wave, &laserMgr, &enemyMgr, &ffMgr, &lbMgr);
-                    gameState = STATE_PLAYING;
-                    HideCursor();
-                }
-            } break;
-            case STATE_PLAYING:
-            {
-                if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-                {
-                    Ray ray = GetMouseRay(GetMousePosition(), camera);
-                    int hits = FireLasers(&laserMgr, &enemyMgr, ray, camera, explosionSound);
-                    score += hits;
-                    if (hits > 0) PlaySound(explosionSound);
-                    PlaySound(shootSound);
-                }
-
-                if (IsKeyPressed(KEY_SPACE))
-                {
-                    bool activated = ActivateForceField(&ffMgr);
-                    if (activated) PlaySound(forceFieldSound); else PlaySound(forceFailSound);
-                }
-
-                int touch_count = GetTouchPointCount();
-                if (touch_count == 2 && touch_count_last_frame != 2)
-                {
-                    bool activated = ActivateForceField(&ffMgr);
-                    if (activated) PlaySound(forceFieldSound); else PlaySound(forceFailSound);
-                }
-                touch_count_last_frame = touch_count;
-
-                UpdateLasers(&laserMgr);
-                UpdateStarfield();
-                int curLives = lives;
-                UpdateEnemies(&enemyMgr, &lives, &wave);
-                bool ffHit = UpdateForceField(&ffMgr, &enemyMgr);
-                if (ffHit) PlaySound(forceFieldHitSound);
-
-                if (curLives > lives) {
-                    // Lost a life this frame
-                    PlaySound(lostLifeSound);
-                }
-                
-                if (lives <= 0)
-                {
-                    gameState = STATE_GAME_OVER;
-                    ShowCursor();
-                }
-
-                // Check for extra life
-                if (score - score_at_last_life >= POINTS_FOR_EXTRA_LIFE) {
-                    lives++;
-                    score_at_last_life += POINTS_FOR_EXTRA_LIFE;
-                    PlaySound(extraLifeSound);
-                }
-
-            } break;
-            case STATE_GAME_OVER:
-            {
-                if (IsKeyPressed(KEY_ENTER) || IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-                {
-                    if (nameRequired)
-                    {
-                        gameState = STATE_ENTER_NAME;
-                    }
-                    else
-                    {
-                        gameState = STATE_SUBMIT_SCORE;
-                    }
-                }
-            } break;
-            case STATE_ENTER_NAME:
-            {
-                // UpdateNameInput is in leaderboard.c
-                // It returns true when the name is submitted
-                if (UpdateNameInput(&lbMgr))
-                {
-                    nameRequired = false;
-                    gameState = STATE_SUBMIT_SCORE;
-                }
-            } break;
-            case STATE_SUBMIT_SCORE:
-            {
-                SubmitScore(&lbMgr, score);
+    while (!WindowShouldClose()) {
+        switch (gameState) {
+        case STATE_START: {
+            if (CheckCollisionPointRec(GetMousePosition(), showTop10Button) &&
+                IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                 ResetLeaderboardFlags(&lbMgr);
                 gameState = STATE_LEADERBOARD;
                 SetLeaderboardActive(&lbMgr, true);
-            } break;
-            case STATE_LEADERBOARD:
-            {
-                UpdateLeaderboard(&lbMgr, (int *)&gameState, score);
-            } break;
-            case STATE_HELP:
-            {
-                if (IsKeyPressed(KEY_ENTER) || IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-                {
-                    gameState = STATE_START;
+            }
+            else if (CheckCollisionPointRec(GetMousePosition(), showHelpButton) &&
+                     IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                gameState = STATE_HELP;
+            }
+            else if (IsKeyPressed(KEY_ENTER) || IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                InitGame(&score, &lives, &wave, &laserMgr, &enemyMgr, &ffMgr, &lbMgr);
+                gameState = STATE_PLAYING;
+                HideCursor();
+            }
+        } break;
+        case STATE_PLAYING: {
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                Ray ray = GetMouseRay(GetMousePosition(), camera);
+                int hits = FireLasers(&laserMgr, &enemyMgr, ray, camera, explosionSound);
+                score += hits;
+                if (hits > 0) PlaySound(explosionSound);
+                PlaySound(shootSound);
+            }
+
+            if (IsKeyPressed(KEY_SPACE)) {
+                bool activated = ActivateForceField(&ffMgr);
+                if (activated)
+                    PlaySound(forceFieldSound);
+                else
+                    PlaySound(forceFailSound);
+            }
+
+            int touch_count = GetTouchPointCount();
+            if (touch_count == 2 && touch_count_last_frame != 2) {
+                bool activated = ActivateForceField(&ffMgr);
+                if (activated)
+                    PlaySound(forceFieldSound);
+                else
+                    PlaySound(forceFailSound);
+            }
+            touch_count_last_frame = touch_count;
+
+            UpdateLasers(&laserMgr);
+            UpdateStarfield();
+            int curLives = lives;
+            UpdateEnemies(&enemyMgr, &lives, &wave);
+            bool ffHit = UpdateForceField(&ffMgr, &enemyMgr);
+            if (ffHit) PlaySound(forceFieldHitSound);
+
+            if (curLives > lives) {
+                // Lost a life this frame
+                PlaySound(lostLifeSound);
+            }
+
+            if (lives <= 0) {
+                gameState = STATE_GAME_OVER;
+                ShowCursor();
+            }
+
+            // Check for extra life
+            if (score - score_at_last_life >= POINTS_FOR_EXTRA_LIFE) {
+                lives++;
+                score_at_last_life += POINTS_FOR_EXTRA_LIFE;
+                PlaySound(extraLifeSound);
+            }
+
+        } break;
+        case STATE_GAME_OVER: {
+            if (IsKeyPressed(KEY_ENTER) || IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                if (nameRequired) {
+                    gameState = STATE_ENTER_NAME;
                 }
-            } break;
-            default:
-            {
-                printf("ERROR: Unknown game state!  Just going to the start.\n");
-                gameState = STATE_START;  // Just go to start on unknown state
-            } break;
+                else {
+                    gameState = STATE_SUBMIT_SCORE;
+                }
+            }
+        } break;
+        case STATE_ENTER_NAME: {
+            // UpdateNameInput is in leaderboard.c
+            // It returns true when the name is submitted
+            if (UpdateNameInput(&lbMgr)) {
+                nameRequired = false;
+                gameState = STATE_SUBMIT_SCORE;
+            }
+        } break;
+        case STATE_SUBMIT_SCORE: {
+            SubmitScore(&lbMgr, score);
+            ResetLeaderboardFlags(&lbMgr);
+            gameState = STATE_LEADERBOARD;
+            SetLeaderboardActive(&lbMgr, true);
+        } break;
+        case STATE_LEADERBOARD: {
+            UpdateLeaderboard(&lbMgr, (int *)&gameState, score);
+        } break;
+        case STATE_HELP: {
+            if (IsKeyPressed(KEY_ENTER) || IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                gameState = STATE_START;
+            }
+        } break;
+        default: {
+            printf("ERROR: Unknown game state!  Just going to the start.\n");
+            gameState = STATE_START; // Just go to start on unknown state
+        } break;
         }
 
         BeginDrawing();
         ClearBackground(COLOR_BACKGROUND);
 
-        if (gameState == STATE_START)
-        {
-            DrawText(GAME_TITLE, GetScreenWidth() / 2 - MeasureText(GAME_TITLE, 40) / 2, GetScreenHeight() / 2 - 40, 40, COLOR_TEXT_TITLE);
-            DrawText("Press ENTER or CLICK to Start", GetScreenWidth() / 2 - MeasureText("Press ENTER or CLICK to Start", 20) / 2, GetScreenHeight() / 2 + 20, 20, COLOR_TEXT_SUBTITLE);
-            
+        if (gameState == STATE_START) {
+            DrawText(GAME_TITLE, GetScreenWidth() / 2 - MeasureText(GAME_TITLE, 40) / 2, GetScreenHeight() / 2 - 40, 40,
+                     COLOR_TEXT_TITLE);
+            DrawText("Press ENTER or CLICK to Start",
+                     GetScreenWidth() / 2 - MeasureText("Press ENTER or CLICK to Start", 20) / 2,
+                     GetScreenHeight() / 2 + 20, 20, COLOR_TEXT_SUBTITLE);
+
             DrawRectangleLinesEx(showTop10Button, 2, COLOR_BUTTON_BOX);
             DrawText("Top 10", showTop10Button.x + 30, showTop10Button.y + 5, 20, COLOR_BUTTON_BOX);
 
@@ -221,8 +209,7 @@ int main(void)
 
             DrawText(GAME_VERSION, 10, GetScreenHeight() - 20, 12, COLOR_TEXT_SUBTITLE);
         }
-        else if (gameState == STATE_PLAYING)
-        {
+        else if (gameState == STATE_PLAYING) {
             BeginMode3D(camera);
             DrawStarfield();
             DrawEnemies(&enemyMgr);
@@ -239,39 +226,40 @@ int main(void)
             DrawText(TextFormat("Wave: %i", wave), GetScreenWidth() / 2 - 20, 10, 20, COLOR_TEXT_WAVE);
             DrawForceFieldUI(&ffMgr);
         }
-        else if (gameState == STATE_GAME_OVER)
-        {
-            DrawText("GAME OVER", GetScreenWidth() / 2 - MeasureText("GAME OVER", 40) / 2, GetScreenHeight() / 2 - 40, 40, COLOR_TEXT_GAMEOVER);
-            DrawText(TextFormat("Final Score: %i", score), GetScreenWidth() / 2 - MeasureText(TextFormat("Final Score: %i", score), 20) / 2, GetScreenHeight() / 2 + 20, 20, COLOR_TEXT_FINAL_SCORE);
-            DrawText("Press ENTER or CLICK to Continue", GetScreenWidth() / 2 - MeasureText("Press ENTER or CLICK to Continue", 20) / 2, GetScreenHeight() / 2 + 60, 20, COLOR_TEXT_SUBTITLE);
+        else if (gameState == STATE_GAME_OVER) {
+            DrawText("GAME OVER", GetScreenWidth() / 2 - MeasureText("GAME OVER", 40) / 2, GetScreenHeight() / 2 - 40,
+                     40, COLOR_TEXT_GAMEOVER);
+            DrawText(TextFormat("Final Score: %i", score),
+                     GetScreenWidth() / 2 - MeasureText(TextFormat("Final Score: %i", score), 20) / 2,
+                     GetScreenHeight() / 2 + 20, 20, COLOR_TEXT_FINAL_SCORE);
+            DrawText("Press ENTER or CLICK to Continue",
+                     GetScreenWidth() / 2 - MeasureText("Press ENTER or CLICK to Continue", 20) / 2,
+                     GetScreenHeight() / 2 + 60, 20, COLOR_TEXT_SUBTITLE);
         }
-        else if (gameState == STATE_ENTER_NAME)
-        {
+        else if (gameState == STATE_ENTER_NAME) {
             DrawNameInput(&lbMgr);
         }
-        else if (gameState == STATE_LEADERBOARD)
-        {
+        else if (gameState == STATE_LEADERBOARD) {
             DrawLeaderboard(&lbMgr);
         }
-        else if (gameState == STATE_HELP)
-        {
+        else if (gameState == STATE_HELP) {
             DrawText("Help / Instructions", 100, 50, 30, COLOR_TEXT_TITLE);
-            DrawText("Use the mouse or touch to aim and click to shoot lasers at incoming enemies.", 100, 100, 20, COLOR_TEXT_SUBTITLE);
-            DrawText("Press SPACE or use two-finger touch to activate the force field.",    100, 125, 20, COLOR_TEXT_SUBTITLE);
-            DrawText("Avoid letting enemies reach you, or you'll lose lives!",              100, 150, 20, COLOR_TEXT_SUBTITLE);
-            DrawText("Gain an extra life every 50 points scored.",                          100, 175, 20, COLOR_TEXT_SUBTITLE);
-            DrawText("Survive as many waves as you can and achieve a high score!",          100, 200, 20, COLOR_TEXT_SUBTITLE);
-            DrawText("Press ENTER or CLICK to return to the main menu.",                    100, 250, 20, COLOR_TEXT_SUBTITLE);
+            DrawText("Use the mouse or touch to aim and click to shoot lasers at incoming enemies.", 100, 100, 20,
+                     COLOR_TEXT_SUBTITLE);
+            DrawText("Press SPACE or use two-finger touch to activate the force field.", 100, 125, 20,
+                     COLOR_TEXT_SUBTITLE);
+            DrawText("Avoid letting enemies reach you, or you'll lose lives!", 100, 150, 20, COLOR_TEXT_SUBTITLE);
+            DrawText("Gain an extra life every 50 points scored.", 100, 175, 20, COLOR_TEXT_SUBTITLE);
+            DrawText("Survive as many waves as you can and achieve a high score!", 100, 200, 20, COLOR_TEXT_SUBTITLE);
+            DrawText("Press ENTER or CLICK to return to the main menu.", 100, 250, 20, COLOR_TEXT_SUBTITLE);
         }
-
 
         EndDrawing();
 
         frameCount++;
         double currentTime = GetTime();
         double elapsedTime = currentTime - previousTime;
-        if (elapsedTime >= 10.0)
-        {
+        if (elapsedTime >= 10.0) {
 #if defined(PLATFORM_WEB)
             emscripten_log(EM_LOG_CONSOLE, "Average FPS: %.2f", frameCount / elapsedTime);
 #else
@@ -294,14 +282,14 @@ int main(void)
     return 0;
 }
 
-
 //----------------------------------------------------------------------------------
 // InitGame - Implementation Notes:
 // - Resets score, lives and wave to starting values
 // - Initializes all subsystems used by the gameplay loop
 // - Spawns initial enemy wave
 //----------------------------------------------------------------------------------
-void InitGame(int* score, int* lives, int* wave, struct LaserManager* lmgr, struct EnemyManager* emgr, struct ForceFieldManager* ffmgr, struct LeaderboardManager* lbmgr)
+void InitGame(int *score, int *lives, int *wave, struct LaserManager *lmgr, struct EnemyManager *emgr,
+              struct ForceFieldManager *ffmgr, struct LeaderboardManager *lbmgr)
 {
     *score = 0;
     *lives = 3;

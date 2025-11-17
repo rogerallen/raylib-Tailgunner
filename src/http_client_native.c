@@ -10,7 +10,8 @@ typedef struct {
     size_t size;
 } MemoryStruct;
 
-static size_t write_memory_callback(void *contents, size_t size, size_t nmemb, void *userp) {
+static size_t write_memory_callback(void *contents, size_t size, size_t nmemb, void *userp)
+{
     size_t realsize = size * nmemb;
     MemoryStruct *mem = (MemoryStruct *)userp;
 
@@ -29,7 +30,8 @@ static size_t write_memory_callback(void *contents, size_t size, size_t nmemb, v
     return realsize;
 }
 
-void HttpGet(const char *url, HttpCallback callback) {
+void HttpGet(const char *url, HttpCallback callback)
+{
     CURL *curl;
     CURLcode res;
     MemoryStruct chunk;
@@ -53,7 +55,8 @@ void HttpGet(const char *url, HttpCallback callback) {
         response.data = NULL;
         response.size = 0;
         response.status = -1;
-    } else {
+    }
+    else {
         long http_code = 0;
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
         response.data = chunk.data;
@@ -65,7 +68,7 @@ void HttpGet(const char *url, HttpCallback callback) {
 
     curl_easy_cleanup(curl);
     curl_global_cleanup();
-    if(chunk.data) free(chunk.data);
+    if (chunk.data) free(chunk.data);
 }
 
 #endif // !PLATFORM_WEB

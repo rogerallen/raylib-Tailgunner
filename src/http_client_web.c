@@ -9,12 +9,9 @@ typedef struct {
     HttpCallback callback;
 } FetchUserData;
 
-void on_fetch_success(emscripten_fetch_t *fetch) {
-    HttpResponse response = {
-        .data = (char *)fetch->data,
-        .size = fetch->numBytes,
-        .status = fetch->status
-    };
+void on_fetch_success(emscripten_fetch_t *fetch)
+{
+    HttpResponse response = {.data = (char *)fetch->data, .size = fetch->numBytes, .status = fetch->status};
 
     FetchUserData *userData = (FetchUserData *)fetch->userData;
     userData->callback(response);
@@ -23,12 +20,9 @@ void on_fetch_success(emscripten_fetch_t *fetch) {
     emscripten_fetch_close(fetch);
 }
 
-void on_fetch_error(emscripten_fetch_t *fetch) {
-    HttpResponse response = {
-        .data = NULL,
-        .size = 0,
-        .status = fetch->status
-    };
+void on_fetch_error(emscripten_fetch_t *fetch)
+{
+    HttpResponse response = {.data = NULL, .size = 0, .status = fetch->status};
 
     FetchUserData *userData = (FetchUserData *)fetch->userData;
     userData->callback(response);
@@ -37,7 +31,8 @@ void on_fetch_error(emscripten_fetch_t *fetch) {
     emscripten_fetch_close(fetch);
 }
 
-void HttpGet(const char *url, HttpCallback callback) {
+void HttpGet(const char *url, HttpCallback callback)
+{
     emscripten_fetch_attr_t attr;
     emscripten_fetch_attr_init(&attr);
     strcpy(attr.requestMethod, "GET");

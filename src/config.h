@@ -23,9 +23,11 @@
 #define WAVE_NERF1_LEVELS 7
 
 // Default enemy radius
+// clang-format off
 #define ENEMY_DEFAULT_RADIUS  1.0f
 #define ENEMY_Z_OFFSET       20.0f
 #define ENEMY_XY_START_RANGE 30
+// clang-format on
 
 // Laser lifetime in seconds when fired
 #define LASER_LIFETIME 0.2f
@@ -34,9 +36,11 @@
 #define LASER_START_FORWARD_OFFSET 0.5f
 
 // Enemy movement speeds
+// clang-format off
 #define ENEMY_DT_DFRAME       0.0025f  // Base speed per frame along Bezier curve
 #define ENEMY_WAVE_DT_DFRAME  0.00015f // Additional speed per wave (wave difficulty scaling)
 #define ENEMY_REPEL_DT_DFRAME 0.01f    // Speed when repelled
+// clang-format on
 
 // Maximum counts
 
@@ -44,11 +48,14 @@
 #define MAX_STARS 500
 
 // Force field tuning
+// clang-format off
 #define FORCE_FIELD_TIMEOUT     10.0f
 #define FORCE_FIELD_ACTIVE_TIME  1.0f
 #define FORCE_FIELD_RADIUS      10.0f
+// clang-format on
 
 // Color definitions
+// clang-format off
 #if 0
 #define COLOR_BACKGROUND                 BLACK
 #define COLOR_TEXT_TITLE                 LIGHTGRAY
@@ -90,6 +97,6 @@
 #define COLOR_INITIAL_BOX                VGREEN
 #define COLOR_BUTTON_BOX                 VGREEN
 #endif
-
+// clang-format on
 
 #endif // CONFIG_H
