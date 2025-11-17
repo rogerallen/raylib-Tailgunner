@@ -34,32 +34,30 @@ static LeaderboardManager *s_lb_for_callbacks = NULL;
 
 #if defined(PLATFORM_WEB)
 #define PLAYER_NAME_STORAGE_KEY "tailgunner_player_name"
-
-EM_JS(char *, emscripten_local_storage_get_item_js, (const char *key_ptr), {
-    var key = UTF8ToString(key_ptr);
-    var value = localStorage.getItem(key);
-    if (value == = null) {
-        return 0; // Return null pointer if item not found
-    }
-    var length = lengthBytesUTF8(value) + 1;
-    var value_ptr = _malloc(length);
-    stringToUTF8(value, value_ptr, length);
-    return value_ptr;
+// clang-format off
+EM_JS(char*, emscripten_local_storage_get_item_js, (const char* key_ptr), {
+  var key = UTF8ToString(key_ptr);
+  var value = localStorage.getItem(key);
+  if (value === null) {
+    return 0; // Return null pointer if item not found
+  }
+  var length = lengthBytesUTF8(value) + 1;
+  var value_ptr = _malloc(length);
+  stringToUTF8(value, value_ptr, length);
+  return value_ptr;
 });
 
-EM_JS(int, emscripten_local_storage_set_item_js, (const char *key_ptr, const char *value_ptr), {
-    var key = UTF8ToString(key_ptr);
-    var value = UTF8ToString(value_ptr);
-    try
-    {
-        localStorage.setItem(key, value);
-        return 0; // Success
-    }
-    catch(e)
-    {
-        return 1; // Failure
-    }
+EM_JS(int, emscripten_local_storage_set_item_js, (const char* key_ptr, const char* value_ptr), {
+  var key = UTF8ToString(key_ptr);
+  var value = UTF8ToString(value_ptr);
+  try {
+    localStorage.setItem(key, value);
+    return 0; // Success
+  } catch (e) {
+    return 1; // Failure
+  }
 });
+// clang-format on
 
 static void onSubmitSuccess(emscripten_fetch_t *fetch)
 {
