@@ -1,3 +1,16 @@
+//================================================================================================
+//
+// leaderboard.c - Leaderboard management
+//
+// See leaderboard.h for module interface documentation.
+//
+// Implementation notes:
+// - Uses cJSON for JSON parsing
+// - Uses emscripten_fetch for web requests on web platforms
+// - Uses libcurl for HTTP requests on native platforms
+//
+//================================================================================================
+
 #include "leaderboard.h"
 #include "cJSON.h"
 #include "config.h"

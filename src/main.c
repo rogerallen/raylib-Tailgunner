@@ -1,3 +1,17 @@
+//================================================================================================
+//
+// main.c - Game entry and orchestration
+//
+// See module-level notes in repository README for high-level behavior. This file
+// initializes subsystems, runs the main loop, and tears down resources on exit.
+//
+// Implementation notes:
+// - Loads audio assets at startup and unloads at exit
+// - Keeps main loop minimal: input -> update -> render
+// - Delegates gameplay logic to subsystem modules
+//
+//================================================================================================
+
 #include "raylib.h"
 #if defined(PLATFORM_WEB)
 #include <emscripten/emscripten.h>
@@ -10,18 +24,6 @@
 #include "leaderboard.h"
 #include "starfield.h"
 #include <stdio.h>
-
-//----------------------------------------------------------------------------------
-// main.c - Game entry and orchestration
-//
-// See module-level notes in repository README for high-level behavior. This file
-// initializes subsystems, runs the main loop, and tears down resources on exit.
-//
-// Implementation notes:
-// - Loads audio assets at startup and unloads at exit
-// - Keeps main loop minimal: input -> update -> render
-// - Delegates gameplay logic to subsystem modules
-//----------------------------------------------------------------------------------
 
 void InitGame(int *score, int *lives, int *wave, struct LaserManager *lmgr, struct EnemyManager *emgr,
               struct ForceFieldManager *ffmgr, struct LeaderboardManager *lbmgr);
