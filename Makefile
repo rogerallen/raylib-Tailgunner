@@ -37,7 +37,7 @@ ifeq ($(PLATFORM), web)
     else
         LDFLAGS = -O3 -s ASSERTIONS=0
     endif
-    LDFLAGS += -s USE_GLFW=3 -s ASYNCIFY --preload-file resources
+    LDFLAGS += -s USE_GLFW=3 -s ASYNCIFY --preload-file resources --preload-file src/starfield.vs --preload-file src/starfield.fs
     RAYLIB_PATH = $(RAYLIB_EMSCRIPTEN_PATH)
     INCLUDE_PATHS = -I$(SRC_DIR) -I$(RAYLIB_PATH)/src
     LIBRARY_PATHS = -L$(RAYLIB_PATH)/raylib
