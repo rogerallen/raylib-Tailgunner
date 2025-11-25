@@ -13,14 +13,14 @@
 #include "config.h"
 #include "raylib.h"
 
-// Star definition
-typedef struct Star {
-    Vector3 position; // Star position in 3D space
-    Color color;      // Star color including alpha for depth effect
-} Star;
+typedef struct Starfield {
+    Mesh mesh;
+    Material material;
+    Matrix *transforms;
+    Vector3 *positions;
+} Starfield;
 
-// Global star array (consider making this an opaque pointer in future)
-extern Star stars[MAX_STARS];
+extern Starfield starfield;
 
 //----------------------------------------------------------------------------------
 // Starfield Module Functions

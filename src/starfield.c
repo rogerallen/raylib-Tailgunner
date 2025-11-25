@@ -5,70 +5,60 @@
 //   See starfield.h for module interface documentation.
 //
 //   Implementation notes:
-//   - Uses small 3D spheres for star representation
-//   - Stars move at constant speed independent of frame rate
-//   - Stars reset to front when passing behind camera
-//   - Randomized alpha values create depth effect
+//   - Uses instanced rendering to draw all stars in a single draw call.
+//   - Star positions are updated on the CPU.
+//   - The transformation matrices are re-uploaded to the GPU each frame via DrawMeshInstanced.
 //
 //================================================================================================
 
 #include "starfield.h"
+#include "raymath.h"
+#include "rlgl.h"
+#include <stdlib.h>
 
 //----------------------------------------------------------------------------------
 // Module Variables
 //----------------------------------------------------------------------------------
-
-Star stars[MAX_STARS]; // Array of star positions and colors
+Starfield starfield;
 
 //----------------------------------------------------------------------------------
 // Public Function Implementations (see starfield.h for documentation)
 //----------------------------------------------------------------------------------
 
-//----------------------------------------------------------------------------------
-// InitStarfield - Implementation Notes:
-// - Randomly distributes stars in view volume
-// - Sets varied alpha values for depth perception
-// - Initial Z positions from -200 to 0
-//----------------------------------------------------------------------------------
 void InitStarfield(void)
 {
-    for (int i = 0; i < MAX_STARS; i++) {
-        stars[i].position = (Vector3){GetRandomValue(-100, 100), GetRandomValue(-100, 100), GetRandomValue(-200, 0)};
-        stars[i].color = (Color){COLOR_STAR.r, COLOR_STAR.g, COLOR_STAR.b, GetRandomValue(100, 255)};
+    starfield.mesh = GenMeshCube(0.1f, 0.1f, 0.1f);
+    starfield.material = LoadMaterialDefault();
+    starfield.material.shader = LoadShader("src/starfield.vs", "src/starfield.fs");
+    starfield.transforms = (Matrix *)RL_MALLOC(MAX_STARS * sizeof(Matrix));
+    starfield.positions = (Vector3 *)RL_MALLOC(MAX_STARS * sizeof(Vector3));
+
+    for (int i = 0; i < MAX_STARS; i++)
+    {
+        starfield.positions[i] = (Vector3){GetRandomValue(-100, 100), GetRandomValue(-100, 100), GetRandomValue(0, 200)};
+        starfield.transforms[i] = MatrixTranslate(starfield.positions[i].x, starfield.positions[i].y, starfield.positions[i].z);
     }
 }
 
-//----------------------------------------------------------------------------------
-// UpdateStarfield - Implementation Notes:
-// - Moves stars at constant 60 units/second
-// - Uses frame time for smooth movement
-// - Resets stars to Z=0 when they pass Z=-200
-//----------------------------------------------------------------------------------
 void UpdateStarfield(void)
 {
-    // Make movement frame-rate independent
-    const float speed = 60.0f; // units per second
+    const float speed = 60.0f;
     float dt = GetFrameTime();
-    for (int i = 0; i < MAX_STARS; i++) {
-        stars[i].position.z -= speed * dt; // Move towards negative Z (away from player)
 
-        if (stars[i].position.z < -200.0f) // Reset when it passes behind the player
+    for (int i = 0; i < MAX_STARS; i++)
+    {
+        starfield.positions[i].z -= speed * dt;
+        if (starfield.positions[i].z < 0)
         {
-            stars[i].position =
-                (Vector3){GetRandomValue(-100, 100), GetRandomValue(-100, 100), 0.0f}; // Reset in front of player
+            starfield.positions[i].x = GetRandomValue(-100, 100);
+            starfield.positions[i].y = GetRandomValue(-100, 100);
+            starfield.positions[i].z = 200;
         }
+        starfield.transforms[i] = MatrixTranslate(starfield.positions[i].x, starfield.positions[i].y, starfield.positions[i].z);
     }
 }
 
-//----------------------------------------------------------------------------------
-// DrawStarfield - Implementation Notes:
-// - Renders each star as a small 3D sphere
-// - Uses star's color property including alpha
-// - Fixed size of 0.1 units for consistent appearance
-//----------------------------------------------------------------------------------
 void DrawStarfield(void)
 {
-    for (int i = 0; i < MAX_STARS; i++) {
-        DrawCubeV(stars[i].position, (Vector3){0.1f, 0.1f, 0.1f}, stars[i].color);
-    }
+    DrawMeshInstanced(starfield.mesh, starfield.material, starfield.transforms, MAX_STARS);
 }
