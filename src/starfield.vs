@@ -2,19 +2,23 @@
 
 // Input vertex attributes
 in vec3 vertexPosition;
-in mat4 instanceTransform;
+in vec3 vertexNormal;
+in vec2 vertexTexCoord;
 
-// Input uniform
-uniform mat4 mvp;
+// Input uniforms - standard raylib uniforms
+uniform mat4 matModel;
+uniform mat4 matView;
+uniform mat4 matProjection;
 
 // Output vertex attributes (to fragment shader)
 out vec3 fragPosition;
 
 void main()
 {
-    vec4 newPosition = vec4(vertexPosition, 1.0);
-    vec4 worldPosition = instanceTransform * newPosition;
-
-    gl_Position = mvp * worldPosition;
-    fragPosition = worldPosition.xyz;
+    // Transform vertex position to world space using the instance model matrix
+    vec4 worldPos = matModel * vec4(vertexPosition, 1.0);
+    fragPosition = worldPos.xyz;
+    
+    // Apply view and projection
+    gl_Position = matProjection * matView * worldPos;
 }

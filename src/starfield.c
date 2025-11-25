@@ -5,9 +5,9 @@
 //   See starfield.h for module interface documentation.
 //
 //   Implementation notes:
-//   - Uses instanced rendering to draw all stars in a single draw call.
-//   - Star positions are updated on the CPU.
-//   - The transformation matrices are re-uploaded to the GPU each frame via DrawMeshInstanced.
+//   - Uses instanced rendering to draw all stars efficiently
+//   - Star positions are updated on the CPU each frame
+//   - Custom shader handles per-instance transformation via matModel uniform
 //
 //================================================================================================
 
@@ -30,13 +30,21 @@ void InitStarfield(void)
     starfield.mesh = GenMeshCube(0.1f, 0.1f, 0.1f);
     starfield.material = LoadMaterialDefault();
     starfield.material.shader = LoadShader("src/starfield.vs", "src/starfield.fs");
+
+    // Get shader uniform locations for transformation matrices
+    starfield.material.shader.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocation(starfield.material.shader, "matModel");
+    starfield.material.shader.locs[SHADER_LOC_MATRIX_VIEW] = GetShaderLocation(starfield.material.shader, "matView");
+    starfield.material.shader.locs[SHADER_LOC_MATRIX_PROJECTION] =
+        GetShaderLocation(starfield.material.shader, "matProjection");
+
     starfield.transforms = (Matrix *)RL_MALLOC(MAX_STARS * sizeof(Matrix));
     starfield.positions = (Vector3 *)RL_MALLOC(MAX_STARS * sizeof(Vector3));
 
-    for (int i = 0; i < MAX_STARS; i++)
-    {
-        starfield.positions[i] = (Vector3){GetRandomValue(-100, 100), GetRandomValue(-100, 100), GetRandomValue(0, 200)};
-        starfield.transforms[i] = MatrixTranslate(starfield.positions[i].x, starfield.positions[i].y, starfield.positions[i].z);
+    for (int i = 0; i < MAX_STARS; i++) {
+        starfield.positions[i] =
+            (Vector3){GetRandomValue(-100, 100), GetRandomValue(-100, 100), GetRandomValue(-200, 0)};
+        starfield.transforms[i] =
+            MatrixTranslate(starfield.positions[i].x, starfield.positions[i].y, starfield.positions[i].z);
     }
 }
 
@@ -45,20 +53,22 @@ void UpdateStarfield(void)
     const float speed = 60.0f;
     float dt = GetFrameTime();
 
-    for (int i = 0; i < MAX_STARS; i++)
-    {
+    for (int i = 0; i < MAX_STARS; i++) {
         starfield.positions[i].z -= speed * dt;
-        if (starfield.positions[i].z < 0)
-        {
+        if (starfield.positions[i].z < -200.0f) {
             starfield.positions[i].x = GetRandomValue(-100, 100);
             starfield.positions[i].y = GetRandomValue(-100, 100);
-            starfield.positions[i].z = 200;
+            starfield.positions[i].z = 0.0f;
         }
-        starfield.transforms[i] = MatrixTranslate(starfield.positions[i].x, starfield.positions[i].y, starfield.positions[i].z);
+        starfield.transforms[i] =
+            MatrixTranslate(starfield.positions[i].x, starfield.positions[i].y, starfield.positions[i].z);
     }
 }
 
 void DrawStarfield(void)
 {
-    DrawMeshInstanced(starfield.mesh, starfield.material, starfield.transforms, MAX_STARS);
+    // Draw each star using the default shader (which handles matrices automatically)
+    for (int i = 0; i < MAX_STARS; i++) {
+        DrawMesh(starfield.mesh, starfield.material, starfield.transforms[i]);
+    }
 }
