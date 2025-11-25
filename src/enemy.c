@@ -10,9 +10,9 @@
 #include "config.h"
 #include "raymath.h"
 #include "rlgl.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 //----------------------------------------------------------------------------------
 // Internal Function Declarations
@@ -152,7 +152,7 @@ static void DrawEnemyShip(const Enemy *enemy)
     up = Vector3CrossProduct(right, forward);
 
     Matrix transform = {right.x, up.x, forward.x, enemy->position.x, right.y, up.y, forward.y, enemy->position.y,
-                        right.z, up.z, forward.z, enemy->position.z, 0, 0, 0, 1};
+                        right.z, up.z, forward.z, enemy->position.z, 0,       0,    0,         1};
 
     rlPushMatrix();
     rlMultMatrixf(MatrixToFloat(transform));
