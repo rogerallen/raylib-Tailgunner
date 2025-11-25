@@ -1,9 +1,11 @@
-#version 330
+#ifdef GL_ES
+precision mediump float;
+#endif
 
 // Input vertex attributes
-in vec3 vertexPosition;
-in vec3 vertexNormal;
-in vec2 vertexTexCoord;
+attribute vec3 vertexPosition;
+attribute vec3 vertexNormal;
+attribute vec2 vertexTexCoord;
 
 // Input uniforms - standard raylib uniforms
 uniform mat4 matModel;
@@ -11,7 +13,7 @@ uniform mat4 matView;
 uniform mat4 matProjection;
 
 // Output vertex attributes (to fragment shader)
-out vec3 fragPosition;
+varying vec3 fragPosition;
 
 void main()
 {
