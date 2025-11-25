@@ -18,6 +18,9 @@
 // Internal Function Declarations
 //----------------------------------------------------------------------------------
 
+// Render a single enemy ship using line-based 3D geometry
+static void DrawEnemyShip(const Enemy *enemy);
+
 static Vector3 GetCubicBezierTangent(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t);
 static Vector3 GetCubicBezierPoint(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t);
 
@@ -35,55 +38,6 @@ void InitEnemies(EnemyManager *mgr)
         mgr->enemies[i].rotationAxis = (Vector3){0.0f, 1.0f, 0.0f};
         mgr->enemies[i].rotationAngle = 0.0f;
     }
-
-    mgr->enemyShader = LoadShader(NULL, NULL);
-
-    // Create the enemy mesh
-    const float r = ENEMY_DEFAULT_RADIUS;
-    const float fin_r = 1.0f;
-
-    Vector3 vertices[] = {
-        // Main body
-        {0, 0, r * 2}, {0, r, 0}, 
-        {0, 0, r * 2}, {0, -r, 0},
-        {0, 0, r * 2}, {-r, 0, 0},
-        {0, 0, r * 2}, {r, 0, 0},
-
-        {0, 0, -r * 2}, {0, r, 0},
-        {0, 0, -r * 2}, {0, -r, 0},
-        {0, 0, -r * 2}, {-r, 0, 0},
-        {0, 0, -r * 2}, {r, 0, 0},
-
-        {0, r, 0}, {r, 0, 0},
-        {r, 0, 0}, {0, -r, 0},
-        {0, -r, 0}, {-r, 0, 0},
-        {-r, 0, 0}, {0, r, 0},
-
-        // Fins
-        {0, r, 0}, {0, fin_r, -r * 2 - fin_r},
-        {0, 0, -r * 2}, {0, fin_r, -r * 2 - fin_r},
-
-        {0, -r, 0}, {0, -fin_r, -r * 2 - fin_r},
-        {0, 0, -r * 2}, {0, -fin_r, -r * 2 - fin_r},
-
-        {-r, 0, 0}, {-fin_r, 0, -r * 2 - fin_r},
-        {0, 0, -r * 2}, {-fin_r, 0, -r * 2 - fin_r},
-
-        {r, 0, 0}, {fin_r, 0, -r * 2 - fin_r},
-        {0, 0, -r * 2}, {fin_r, 0, -r * 2 - fin_r},
-    };
-
-    mgr->enemyMesh = (Mesh){0};
-    mgr->enemyMesh.vertexCount = 40;
-    mgr->enemyMesh.vertices = (float *)RL_MALLOC(mgr->enemyMesh.vertexCount * 3 * sizeof(float));
-    memcpy(mgr->enemyMesh.vertices, vertices, mgr->enemyMesh.vertexCount * 3 * sizeof(float));
-    mgr->enemyMesh.vboId = (unsigned int *)RL_CALLOC(1, sizeof(unsigned int));
-    mgr->enemyMesh.vboId[0] = rlLoadVertexBuffer(mgr->enemyMesh.vertices, mgr->enemyMesh.vertexCount * 3 * sizeof(float), false);
-    mgr->enemyMesh.vaoId = rlLoadVertexArray();
-    rlEnableVertexArray(mgr->enemyMesh.vaoId);
-    rlEnableVertexAttribute(0);
-    rlSetVertexAttribute(0, 3, RL_FLOAT, 0, 0, 0);
-    rlDisableVertexArray();
 }
 
 void SpawnWave(EnemyManager *mgr, int wave)
@@ -161,65 +115,92 @@ void UpdateEnemies(EnemyManager *mgr, int *lives, int *wave)
 
 void DrawEnemies(EnemyManager *mgr)
 {
-    int mvpLoc = GetShaderLocation(mgr->enemyShader, "mvp");
-
-    rlSetLineWidth(2.0f);
-    rlEnableShader(mgr->enemyShader.id);
-
     for (int i = 0; i < WAVE_SIZE; i++) {
         if (mgr->enemies[i].active) {
-            Enemy *enemy = &mgr->enemies[i];
-            
-            Vector3 forward;
-            if (enemy->state == ENEMY_STATE_REPELLED) {
-                Vector3 to_p0 = Vector3Subtract(enemy->p0, enemy->position);
-                if (Vector3LengthSqr(to_p0) > 0.0001f) {
-                    forward = Vector3Normalize(to_p0);
-                }
-                else {
-                    forward = GetCubicBezierTangent(enemy->p0, enemy->p1, enemy->p2, enemy->p3, 0.0f);
-                }
-            }
-            else {
-                forward = GetCubicBezierTangent(enemy->p0, enemy->p1, enemy->p2, enemy->p3, enemy->t);
-                if (Vector3LengthSqr(forward) < 0.0001f) {
-                    forward = Vector3Normalize(Vector3Negate(enemy->position));
-                }
-            }
-
-            Vector3 up = {0.0f, 1.0f, 0.0f};
-            Vector3 right = Vector3CrossProduct(forward, up);
-            up = Vector3CrossProduct(right, forward);
-
-            Matrix transform = {
-                right.x, up.x, forward.x, enemy->position.x,
-                right.y, up.y, forward.y, enemy->position.y,
-                right.z, up.z, forward.z, enemy->position.z,
-                0, 0, 0, 1
-            };
-
-            rlPushMatrix();
-            rlMultMatrixf(MatrixToFloat(transform));
-            rlRotatef(enemy->rotationAngle, enemy->rotationAxis.x, enemy->rotationAxis.y, enemy->rotationAxis.z);
-
-            Matrix mvp = MatrixMultiply(rlGetMatrixModelview(), rlGetMatrixProjection());
-            SetShaderValueMatrix(mgr->enemyShader, mvpLoc, mvp);
-            
-            rlEnableVertexArray(mgr->enemyMesh.vaoId);
-            rlColor4ub(enemy->color.r, enemy->color.g, enemy->color.b, enemy->color.a);
-            rlDrawVertexArray(0, mgr->enemyMesh.vertexCount);
-            rlDisableVertexArray();
-
-            rlPopMatrix();
+            DrawEnemyShip(&mgr->enemies[i]);
         }
     }
-    rlDisableShader();
-    rlSetLineWidth(1.0f);
 }
 
 //----------------------------------------------------------------------------------
 // Internal Function Implementations
 //----------------------------------------------------------------------------------
+
+static void DrawEnemyShip(const Enemy *enemy)
+{
+    float r = enemy->radius;
+    float fin_r = 1.0f; // Fin size relative to body radius
+    Vector3 forward;
+    if (enemy->state == ENEMY_STATE_REPELLED) {
+        Vector3 to_p0 = Vector3Subtract(enemy->p0, enemy->position);
+        if (Vector3LengthSqr(to_p0) > 0.0001f) {
+            forward = Vector3Normalize(to_p0);
+        }
+        else {
+            forward = GetCubicBezierTangent(enemy->p0, enemy->p1, enemy->p2, enemy->p3, 0.0f);
+        }
+    }
+    else {
+        forward = GetCubicBezierTangent(enemy->p0, enemy->p1, enemy->p2, enemy->p3, enemy->t);
+        if (Vector3LengthSqr(forward) < 0.0001f) {
+            forward = Vector3Normalize(Vector3Negate(enemy->position));
+        }
+    }
+
+    Vector3 up = {0.0f, 1.0f, 0.0f};
+    Vector3 right = Vector3CrossProduct(forward, up);
+    up = Vector3CrossProduct(right, forward);
+
+    Matrix transform = {right.x, up.x, forward.x, enemy->position.x, right.y, up.y, forward.y, enemy->position.y,
+                        right.z, up.z, forward.z, enemy->position.z, 0, 0, 0, 1};
+
+    rlPushMatrix();
+    rlMultMatrixf(MatrixToFloat(transform));
+    rlRotatef(enemy->rotationAngle, enemy->rotationAxis.x, enemy->rotationAxis.y, enemy->rotationAxis.z);
+
+    Vector3 v_top = {0, r, 0};
+    Vector3 v_bottom = {0, -r, 0};
+    Vector3 v_right = {r, 0, 0};
+    Vector3 v_left = {-r, 0, 0};
+    Vector3 v_front = {0, 0, r * 2}; // 2x longer
+    Vector3 v_back = {0, 0, -r * 2}; // 2x longer
+
+    // Main body
+    DrawLine3D(v_front, v_top, enemy->color);
+    DrawLine3D(v_front, v_bottom, enemy->color);
+    DrawLine3D(v_front, v_left, enemy->color);
+    DrawLine3D(v_front, v_right, enemy->color);
+
+    DrawLine3D(v_back, v_top, enemy->color);
+    DrawLine3D(v_back, v_bottom, enemy->color);
+    DrawLine3D(v_back, v_left, enemy->color);
+    DrawLine3D(v_back, v_right, enemy->color);
+
+    DrawLine3D(v_top, v_right, enemy->color);
+    DrawLine3D(v_right, v_bottom, enemy->color);
+    DrawLine3D(v_bottom, v_left, enemy->color);
+    DrawLine3D(v_left, v_top, enemy->color);
+
+    // Fins
+    Vector3 fin_top_back = {0, fin_r, -r * 2 - fin_r};
+    Vector3 fin_bottom_back = {0, -fin_r, -r * 2 - fin_r};
+    Vector3 fin_left_back = {-fin_r, 0, -r * 2 - fin_r};
+    Vector3 fin_right_back = {fin_r, 0, -r * 2 - fin_r};
+
+    DrawLine3D(v_top, fin_top_back, enemy->color);
+    DrawLine3D(v_back, fin_top_back, enemy->color);
+
+    DrawLine3D(v_bottom, fin_bottom_back, enemy->color);
+    DrawLine3D(v_back, fin_bottom_back, enemy->color);
+
+    DrawLine3D(v_left, fin_left_back, enemy->color);
+    DrawLine3D(v_back, fin_left_back, enemy->color);
+
+    DrawLine3D(v_right, fin_right_back, enemy->color);
+    DrawLine3D(v_back, fin_right_back, enemy->color);
+
+    rlPopMatrix();
+}
 
 static Vector3 GetCubicBezierPoint(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
 {

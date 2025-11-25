@@ -40,8 +40,6 @@ typedef struct Enemy {
 // can allocate or pass around manager instances instead of using a global.
 typedef struct EnemyManager {
     Enemy enemies[WAVE_SIZE];
-    Mesh enemyMesh;
-    Shader enemyShader;
 } EnemyManager;
 
 //----------------------------------------------------------------------------------
