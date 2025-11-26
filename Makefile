@@ -27,6 +27,7 @@ RAYLIB_EMSCRIPTEN_PATH ?= /home/rallen/Documents/Devel/raylib/raylib
 
 # Build type
 DEBUG ?= 0
+DEBUG_OPENGL ?= 0
 
 # Compiler and flags
 ifeq ($(PLATFORM), web)
@@ -36,6 +37,9 @@ ifeq ($(PLATFORM), web)
         LDFLAGS = -O0 -g -s ASSERTIONS=1 
     else
         LDFLAGS = -O3 -s ASSERTIONS=0
+    endif
+    ifeq ($(DEBUG_OPENGL), 1)
+        CFLAGS += -DDEBUG_OPENGL
     endif
     LDFLAGS += -s USE_GLFW=3 -s ASYNCIFY --preload-file resources --preload-file src/starfield.vs --preload-file src/starfield.fs
     RAYLIB_PATH = $(RAYLIB_EMSCRIPTEN_PATH)
@@ -50,6 +54,9 @@ else
         CFLAGS += -g -O0 # Debug flags
     else
         CFLAGS += -O2 # Release flags
+    endif
+    ifeq ($(DEBUG_OPENGL), 1)
+        CFLAGS += -DDEBUG_OPENGL
     endif
     RAYLIB_PATH = $(RAYLIB_NATIVE_PATH)
     INCLUDE_PATHS = -I$(SRC_DIR) -I$(RAYLIB_PATH)/include
