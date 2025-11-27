@@ -1,8 +1,5 @@
 #version 330 core
 
-// Input fragment attributes
-in vec3 fragPosition;
-
 // Output fragment color
 out vec4 finalColor;
 
