@@ -29,6 +29,9 @@ extern Starfield starfield;
 // Initialize the star field, randomly placing all stars
 void InitStarfield(void);
 
+// Unload star field data and resources
+void UnloadStarfield(void);
+
 // Update star positions, moving them toward camera and wrapping
 void UpdateStarfield(void);
 

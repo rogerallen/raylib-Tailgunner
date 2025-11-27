@@ -279,6 +279,7 @@ int main(void)
     UnloadSound(forceFieldSound);
     UnloadSound(forceFailSound);
     UnloadSound(forceFieldHitSound);
+    UnloadStarfield();
     CloseAudioDevice();
 
     CloseWindow();

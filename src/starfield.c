@@ -12,6 +12,7 @@
 //================================================================================================
 
 #include "starfield.h"
+#include "gl_debug.h"
 #include "raymath.h"
 #include "rlgl.h"
 #include <stdlib.h>
@@ -33,7 +34,9 @@ void InitStarfield(void)
                                            TextFormat("resources/shaders/glsl%i/starfield.fs", GLSL_VERSION));
 
     // Get shader uniform locations for transformation matrices
-    starfield.material.shader.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocation(starfield.material.shader, "matModel");
+    // following line is a key! difference from example code.  Found on reddit.
+    starfield.material.shader.locs[SHADER_LOC_MATRIX_MODEL] =
+        GetShaderLocationAttrib(starfield.material.shader, "instanceTransform");
     starfield.material.shader.locs[SHADER_LOC_MATRIX_VIEW] = GetShaderLocation(starfield.material.shader, "matView");
     starfield.material.shader.locs[SHADER_LOC_MATRIX_PROJECTION] =
         GetShaderLocation(starfield.material.shader, "matProjection");
@@ -47,6 +50,14 @@ void InitStarfield(void)
         starfield.transforms[i] =
             MatrixTranslate(starfield.positions[i].x, starfield.positions[i].y, starfield.positions[i].z);
     }
+}
+
+void UnloadStarfield(void)
+{
+    UnloadMesh(starfield.mesh);
+    UnloadMaterial(starfield.material);
+    RL_FREE(starfield.transforms);
+    RL_FREE(starfield.positions);
 }
 
 void UpdateStarfield(void)
@@ -68,8 +79,6 @@ void UpdateStarfield(void)
 
 void DrawStarfield(void)
 {
-    // Draw each star using the default shader (which handles matrices automatically)
-    for (int i = 0; i < MAX_STARS; i++) {
-        DrawMesh(starfield.mesh, starfield.material, starfield.transforms[i]);
-    }
+    // Draw all the stars via instancing
+    DrawMeshInstanced(starfield.mesh, starfield.material, starfield.transforms, MAX_STARS);
 }
