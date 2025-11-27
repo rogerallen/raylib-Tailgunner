@@ -41,7 +41,7 @@ ifeq ($(PLATFORM), web)
     ifeq ($(DEBUG_OPENGL), 1)
         CFLAGS += -DDEBUG_OPENGL
     endif
-    LDFLAGS += -s USE_GLFW=3 -s ASYNCIFY --preload-file resources --preload-file src/starfield.vs --preload-file src/starfield.fs
+    LDFLAGS += -s USE_GLFW=3 -s ASYNCIFY --preload-file resources
     RAYLIB_PATH = $(RAYLIB_EMSCRIPTEN_PATH)
     INCLUDE_PATHS = -I$(SRC_DIR) -I$(RAYLIB_PATH)/src
     LIBRARY_PATHS = -L$(RAYLIB_PATH)/raylib
@@ -49,7 +49,7 @@ ifeq ($(PLATFORM), web)
     TARGET = $(PROJECT_NAME).html
 else
     CC = gcc
-    CFLAGS = -Wall -std=c99 -D_DEFAULT_SOURCE -Wno-missing-braces -MMD -MP
+    CFLAGS = -Wall -std=c99 -D_DEFAULT_SOURCE -Wno-missing-braces -DPLATFORM_DESKTOP -MMD -MP
     ifeq ($(DEBUG), 1)
         CFLAGS += -g -O0 # Debug flags
     else

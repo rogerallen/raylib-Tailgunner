@@ -29,7 +29,8 @@ void InitStarfield(void)
 {
     starfield.mesh = GenMeshCube(0.1f, 0.1f, 0.1f);
     starfield.material = LoadMaterialDefault();
-    starfield.material.shader = LoadShader("src/starfield.vs", "src/starfield.fs");
+    starfield.material.shader = LoadShader(TextFormat("resources/shaders/glsl%i/starfield.vs", GLSL_VERSION),
+                                           TextFormat("resources/shaders/glsl%i/starfield.fs", GLSL_VERSION));
 
     // Get shader uniform locations for transformation matrices
     starfield.material.shader.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocation(starfield.material.shader, "matModel");
