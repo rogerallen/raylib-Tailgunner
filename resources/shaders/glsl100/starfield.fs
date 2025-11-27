@@ -4,8 +4,11 @@
 precision mediump float;
 #endif
 
+// Uniform diffuse color (set from the application)
+uniform vec4 colDiffuse;
+
 void main()
 {
-    // VGREEN color: 0x30 0xf0 0xe0 0xff = (48, 240, 224, 255) normalized to (0.188, 0.941, 0.878, 1.0)
-    gl_FragColor = vec4(0.188, 0.941, 0.878, 1.0);
+    // Use application-provided color for stars
+    gl_FragColor = colDiffuse;
 }

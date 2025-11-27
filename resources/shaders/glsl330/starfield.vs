@@ -7,6 +7,7 @@ in mat4 instanceTransform;
 // Input uniforms - standard raylib uniforms
 uniform mat4 matView;
 uniform mat4 matProjection;
+uniform vec4 colDiffuse;
 
 void main()
 {

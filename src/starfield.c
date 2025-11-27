@@ -33,6 +33,9 @@ void InitStarfield(void)
     starfield.material.shader = LoadShader(TextFormat("resources/shaders/glsl%i/starfield.vs", GLSL_VERSION),
                                            TextFormat("resources/shaders/glsl%i/starfield.fs", GLSL_VERSION));
 
+    // Send star color to shader
+    starfield.material.maps[MATERIAL_MAP_DIFFUSE].color = COLOR_STAR;
+
     // Get shader uniform locations for transformation matrices
     // following line is a key! difference from example code.  Found on reddit.
     starfield.material.shader.locs[SHADER_LOC_MATRIX_MODEL] =
@@ -40,6 +43,9 @@ void InitStarfield(void)
     starfield.material.shader.locs[SHADER_LOC_MATRIX_VIEW] = GetShaderLocation(starfield.material.shader, "matView");
     starfield.material.shader.locs[SHADER_LOC_MATRIX_PROJECTION] =
         GetShaderLocation(starfield.material.shader, "matProjection");
+    starfield.material.shader.locs[SHADER_LOC_COLOR_DIFFUSE] =
+        //    GetShaderLocationAttrib(starfield.material.shader, "vertexColor");
+        GetShaderLocation(starfield.material.shader, "colDiffuse");
 
     starfield.transforms = (Matrix *)RL_MALLOC(MAX_STARS * sizeof(Matrix));
     starfield.positions = (Vector3 *)RL_MALLOC(MAX_STARS * sizeof(Vector3));
