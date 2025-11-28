@@ -28,6 +28,12 @@ static Vector3 GetCubicBezierPoint(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p
 // Public Function Implementations
 //----------------------------------------------------------------------------------
 
+//----------------------------------------------------------------------------------
+// InitEnemies - Implementation Notes:
+// - Sets all enemies to inactive
+// - Initializes default properties (radius, color)
+// - Sets up transform (axis, angle) for rotation effects
+//----------------------------------------------------------------------------------
 void InitEnemies(EnemyManager *mgr)
 {
     for (int i = 0; i < WAVE_SIZE; i++) {
@@ -40,6 +46,13 @@ void InitEnemies(EnemyManager *mgr)
     }
 }
 
+//----------------------------------------------------------------------------------
+// SpawnWave - Implementation Notes:
+// - Enemies are all inactive before calling
+// - Assigns random but controlled Bezier curve paths
+// - Alternates enemies between left/right approach paths
+// - Staggers enemy positions with z-offset
+//----------------------------------------------------------------------------------
 void SpawnWave(EnemyManager *mgr, int wave)
 {
     for (int i = 0; i < WAVE_SIZE; i++) {
@@ -60,6 +73,8 @@ void SpawnWave(EnemyManager *mgr, int wave)
         e->p2 = (Vector3){(float)GetRandomValue(-40, -20) * side, (float)GetRandomValue(10, 20), -25.0f};
         e->p3 = (Vector3){(float)GetRandomValue(20, 40) * side, (float)GetRandomValue(-20, -10), 1.0f};
 
+        // Apply wave-based nerfing of enemies
+        // waves count from 1,2,3,...
         if (wave <= WAVE_NERF2_LEVELS) {
             if (i >= WAVE_SIZE - 2) {
                 e->active = false;
@@ -73,6 +88,14 @@ void SpawnWave(EnemyManager *mgr, int wave)
     }
 }
 
+//----------------------------------------------------------------------------------
+// UpdateEnemies - Implementation Notes:
+// - Handles enemy state transitions (normal/repelled)
+// - Moves enemies along Bezier paths or linear repel paths
+// - Increases speed with wave number
+// - Spawns new wave when all enemies inactive
+// - Updates lives when enemies pass player
+//----------------------------------------------------------------------------------
 void UpdateEnemies(EnemyManager *mgr, int *lives, int *wave)
 {
     int activeEnemies = 0;
@@ -113,6 +136,13 @@ void UpdateEnemies(EnemyManager *mgr, int *lives, int *wave)
     }
 }
 
+//----------------------------------------------------------------------------------
+// DrawEnemies - Implementation Notes:
+// - Renders only active enemies
+// - Uses line-based 3D geometry for wireframe look
+// - Handles orientation based on movement direction
+// - Adds rotation effect during repel state
+//----------------------------------------------------------------------------------
 void DrawEnemies(EnemyManager *mgr)
 {
     for (int i = 0; i < WAVE_SIZE; i++) {
@@ -126,6 +156,9 @@ void DrawEnemies(EnemyManager *mgr)
 // Internal Function Implementations
 //----------------------------------------------------------------------------------
 
+// Render a single enemy ship using line-based 3D geometry
+//
+// @param enemy The enemy to render, must be active
 static void DrawEnemyShip(const Enemy *enemy)
 {
     float r = enemy->radius;
@@ -202,6 +235,11 @@ static void DrawEnemyShip(const Enemy *enemy)
     rlPopMatrix();
 }
 
+// Calculate a point on a cubic Bezier curve using De Casteljau's algorithm
+//
+// @param p0,p1,p2,p3 Control points defining the curve
+// @param t Parameter value along curve [0,1]
+// @return Position vector of point on curve
 static Vector3 GetCubicBezierPoint(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
 {
     Vector3 result;
@@ -218,6 +256,11 @@ static Vector3 GetCubicBezierPoint(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p
     return result;
 }
 
+// Calculate the normalized tangent vector at point t along a cubic Bezier curve
+//
+// @param p0,p1,p2,p3 Control points defining the curve
+// @param t Parameter value along curve [0,1]
+// @return Normalized tangent vector (or forward vector if tangent is zero)
 static Vector3 GetCubicBezierTangent(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
 {
     Vector3 result;
