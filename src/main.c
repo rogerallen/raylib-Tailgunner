@@ -20,6 +20,7 @@
 #include "enemy.h"
 #include "forcefield.h"
 #include "game.h"
+#include "gl_debug.h"
 #include "laser.h"
 #include "leaderboard.h"
 #include "starfield.h"
@@ -256,12 +257,13 @@ int main(void)
             DrawText("Press ENTER or CLICK to return to the main menu.", 100, 250, 20, COLOR_TEXT_SUBTITLE);
         }
 
+        CHECK_GL_ERRORS();
         EndDrawing();
 
         frameCount++;
         double currentTime = GetTime();
         double elapsedTime = currentTime - previousTime;
-        if (elapsedTime >= 10.0) {
+        if (elapsedTime >= FPS_INTERVAL) {
 #if defined(PLATFORM_WEB)
             emscripten_log(EM_LOG_CONSOLE, "Average FPS: %.2f", frameCount / elapsedTime);
 #else
@@ -277,6 +279,7 @@ int main(void)
     UnloadSound(forceFieldSound);
     UnloadSound(forceFailSound);
     UnloadSound(forceFieldHitSound);
+    UnloadStarfield();
     CloseAudioDevice();
 
     CloseWindow();

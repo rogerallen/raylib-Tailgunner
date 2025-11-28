@@ -10,67 +10,22 @@
 #include "config.h"
 #include "raymath.h"
 #include "rlgl.h"
-
 #include <stdio.h>
-
-// No module-level globals: all enemy state lives inside EnemyManager passed by callers
+#include <stdlib.h>
+#include <string.h>
 
 //----------------------------------------------------------------------------------
 // Internal Function Declarations
 //----------------------------------------------------------------------------------
 
 // Render a single enemy ship using line-based 3D geometry
-//
-// @param enemy The enemy to render, must be active
 static void DrawEnemyShip(const Enemy *enemy);
 
-// Calculate the normalized tangent vector at point t along a cubic Bezier curve
-//
-// @param p0,p1,p2,p3 Control points defining the curve
-// @param t Parameter value along curve [0,1]
-// @return Normalized tangent vector (or forward vector if tangent is zero)
 static Vector3 GetCubicBezierTangent(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t);
-
-// Calculate a point on a cubic Bezier curve using De Casteljau's algorithm
-//
-// @param p0,p1,p2,p3 Control points defining the curve
-// @param t Parameter value along curve [0,1]
-// @return Position vector of point on curve
-static Vector3 GetCubicBezierPoint(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
-{
-    Vector3 result;
-    float u = 1.0f - t;
-    float tt = t * t;
-    float uu = u * u;
-    float uuu = uu * u;
-    float ttt = tt * t;
-
-    result.x = uuu * p0.x + 3 * uu * t * p1.x + 3 * u * tt * p2.x + ttt * p3.x;
-    result.y = uuu * p0.y + 3 * uu * t * p1.y + 3 * u * tt * p2.y + ttt * p3.y;
-    result.z = uuu * p0.z + 3 * uu * t * p1.z + 3 * u * tt * p2.z + ttt * p3.z;
-
-    return result;
-}
-
-static Vector3 GetCubicBezierTangent(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
-{
-    Vector3 result;
-    float u = 1.0f - t;
-    float tt = t * t;
-    float uu = u * u;
-
-    result.x = 3 * uu * (p1.x - p0.x) + 6 * u * t * (p2.x - p1.x) + 3 * tt * (p3.x - p2.x);
-    result.y = 3 * uu * (p1.y - p0.y) + 6 * u * t * (p2.y - p1.y) + 3 * tt * (p3.y - p2.y);
-    result.z = 3 * uu * (p1.z - p0.z) + 6 * u * t * (p2.z - p1.z) + 3 * tt * (p3.z - p2.z);
-
-    // Avoid normalizing a near-zero vector which can produce NaNs
-    float len = Vector3Length(result);
-    if (len < 1e-6f) return (Vector3){0.0f, 0.0f, 0.0f};
-    return Vector3Scale(result, 1.0f / len);
-}
+static Vector3 GetCubicBezierPoint(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t);
 
 //----------------------------------------------------------------------------------
-// Public Function Implementations (see enemy.h for documentation)
+// Public Function Implementations
 //----------------------------------------------------------------------------------
 
 //----------------------------------------------------------------------------------
@@ -100,7 +55,6 @@ void InitEnemies(EnemyManager *mgr)
 //----------------------------------------------------------------------------------
 void SpawnWave(EnemyManager *mgr, int wave)
 {
-
     for (int i = 0; i < WAVE_SIZE; i++) {
         Enemy *e = &mgr->enemies[i];
         e->active = true;
@@ -123,13 +77,11 @@ void SpawnWave(EnemyManager *mgr, int wave)
         // waves count from 1,2,3,...
         if (wave <= WAVE_NERF2_LEVELS) {
             if (i >= WAVE_SIZE - 2) {
-                printf("Nerfing enemy at index %d for wave %d\n", i, wave);
                 e->active = false;
             }
         }
         else if (wave <= WAVE_NERF1_LEVELS) {
             if (i >= WAVE_SIZE - 1) {
-                printf("Nerfing enemy at index %d for wave %d\n", i, wave);
                 e->active = false;
             }
         }
@@ -204,6 +156,9 @@ void DrawEnemies(EnemyManager *mgr)
 // Internal Function Implementations
 //----------------------------------------------------------------------------------
 
+// Render a single enemy ship using line-based 3D geometry
+//
+// @param enemy The enemy to render, must be active
 static void DrawEnemyShip(const Enemy *enemy)
 {
     float r = enemy->radius;
@@ -278,4 +233,46 @@ static void DrawEnemyShip(const Enemy *enemy)
     DrawLine3D(v_back, fin_right_back, enemy->color);
 
     rlPopMatrix();
+}
+
+// Calculate a point on a cubic Bezier curve using De Casteljau's algorithm
+//
+// @param p0,p1,p2,p3 Control points defining the curve
+// @param t Parameter value along curve [0,1]
+// @return Position vector of point on curve
+static Vector3 GetCubicBezierPoint(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
+{
+    Vector3 result;
+    float u = 1.0f - t;
+    float tt = t * t;
+    float uu = u * u;
+    float uuu = uu * u;
+    float ttt = tt * t;
+
+    result.x = uuu * p0.x + 3 * uu * t * p1.x + 3 * u * tt * p2.x + ttt * p3.x;
+    result.y = uuu * p0.y + 3 * uu * t * p1.y + 3 * u * tt * p2.y + ttt * p3.y;
+    result.z = uuu * p0.z + 3 * uu * t * p1.z + 3 * u * tt * p2.z + ttt * p3.z;
+
+    return result;
+}
+
+// Calculate the normalized tangent vector at point t along a cubic Bezier curve
+//
+// @param p0,p1,p2,p3 Control points defining the curve
+// @param t Parameter value along curve [0,1]
+// @return Normalized tangent vector (or forward vector if tangent is zero)
+static Vector3 GetCubicBezierTangent(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
+{
+    Vector3 result;
+    float u = 1.0f - t;
+    float tt = t * t;
+    float uu = u * u;
+
+    result.x = 3 * uu * (p1.x - p0.x) + 6 * u * t * (p2.x - p1.x) + 3 * tt * (p3.x - p2.x);
+    result.y = 3 * uu * (p1.y - p0.y) + 6 * u * t * (p2.y - p1.y) + 3 * tt * (p3.y - p2.y);
+    result.z = 3 * uu * (p1.z - p0.z) + 6 * u * t * (p2.z - p1.z) + 3 * tt * (p3.z - p2.z);
+
+    float len = Vector3Length(result);
+    if (len < 1e-6f) return (Vector3){0.0f, 0.0f, 0.0f};
+    return Vector3Scale(result, 1.0f / len);
 }
