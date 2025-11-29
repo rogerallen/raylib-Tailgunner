@@ -155,8 +155,8 @@ cppcheck:
 		$(SRC_DIR)
 	@echo "cppcheck report saved to cppcheck-report.txt"
 	@echo "Filtering to cppcheckfrom cppcheck report..."
-	# remove known issues (3 lines each)
-	@sed '/src\/cJSON\.c/{N;N;d};/include\/raymath\.h/{N;N;d};/src\/external\/glad\.h/{N;N;d};/include\/rlgl\.h/{N;N;d}' cppcheck-report.txt > cppcheck-filtered-report.txt
+	# remove known issues (3 lines each) to cppcheck-filtered-report.txt
+	@sed '/Too many #ifdef configurations/{N;N;d};/src\/cJSON\.c/{N;N;d};/include\/raymath\.h/{N;N;d};/src\/external\/glad\.h/{N;N;d};/include\/rlgl\.h/{N;N;d}' cppcheck-report.txt > cppcheck-filtered-report.txt
 
 # 4. clang-check - LLVM static analyzer (simpler version available)
 clang-check:
