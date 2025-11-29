@@ -32,22 +32,31 @@ make webserve
 ```
 Now open http://localhost:8000/tailgunner.html and you should see the game.
 
-## Module-level notes
+## Development Notes
 
-These notes describe the high-level organization of the code and the role of `src/main.c`.
+Recommended Analysis Workflow
 
-- `main.c` is the application bootstrap and primary game loop. It is intentionally small: it
-	initializes subsystems, runs input -> update -> render each frame, and performs teardown.
-- Subsystems are encapsulated in small "manager" structs (stack-allocated in `main.c`):
-	`EnemyManager`, `LaserManager`, and `ForceFieldManager`. Each subsystem exports `Init` /
-	`Update` / `Draw` functions that accept a pointer to the manager instance. This avoids
-	module-level globals and makes the state easier to reason about or move to heap if needed.
-- Audio resources (sounds) are loaded in `main.c` and currently played by both `main.c` and
-	some subsystems. Prefer playing audio at the caller level (top-level) for clearer separation
-	of concerns — see `src/laser.c` for an example where a hit returns a count and the caller
-	plays the explosion sound.
-- The game loop order is: input handling (fire / forcefield), Update subsystems (lasers, starfield,
-	enemies, forcefield), then Render (3D mode: starfield, enemies, lasers; 2D overlays and UI).
-- Important configuration values (counts, lifetimes, radii) live in `src/config.h` so tuning is
-	centralized.
+### 1. Daily Development
+```bash
+make gcc-warnings    # Fast, catches common issues
+make asan-run        # Build and test with memory instrumentation
+```
 
+### 2. Before Commit
+```bash
+make cppcheck        # Static analysis
+make clang-check     # Clang validation
+```
+
+### 3. Before Release
+```bash
+make valgrind        # Thorough memory check
+make analyze         # Run all tools (cppcheck, clang-check, valgrind)
+```
+
+### 4. Debugging Memory Issues
+```bash
+make asan-run        # First: Fast runtime detection
+# If ASAN finds nothing:
+make valgrind        # Second: More thorough analysis
+```
