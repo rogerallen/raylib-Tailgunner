@@ -459,7 +459,7 @@ static bool CurlPerformNoWrite(const char *url)
     return (res == CURLE_OK);
 }
 
-static const char *GetConfigPath()
+static const char *GetConfigPath(void)
 {
     const char *homeDir = getenv("HOME");
     if (homeDir == NULL) {
@@ -661,7 +661,7 @@ static void FetchUserTop10(LeaderboardManager *mgr, const char *name)
 #endif
 }
 
-static void RequestLeaderboardUpdate()
+static void RequestLeaderboardUpdate(void)
 {
     if (s_lb_for_callbacks) s_lb_for_callbacks->requestUpdate = true;
 }
