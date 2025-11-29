@@ -16,11 +16,8 @@
 #include "enemy.h"
 #include "rlgl.h"
 
-// No module-level globals: state is stored in ForceFieldManager instances
-
 //----------------------------------------------------------------------------------
-//----------------------------------------------------------------------------------
-// Module: ForceFieldManager-based implementation (no globals)
+// Force Field Module Functions (see forcefield.h for documentation)
 //----------------------------------------------------------------------------------
 
 void InitForceField(ForceFieldManager *mgr)
@@ -74,12 +71,13 @@ bool UpdateForceField(ForceFieldManager *mgr, struct EnemyManager *emgr)
 
     return anyHit;
 }
-//
+
+//----------------------------------------------------------------------------------
 // DrawForceField2D - Implementation Notes:
 // - 3 rotated squares horizontally in 2 rows for grid effect
-// - so, square diagonals align with screen axes and are 3 wide, 2 high
-// - square diagonal is min(screenWidth*0.8/3, screenHeight*0.8/2)
-//
+// - square diagonals align with screen axes and are 3 wide, 2 high
+// - cell diagonal is min(screenWidth*0.8/3, screenHeight*0.8/2)
+//----------------------------------------------------------------------------------
 void DrawForceField2D(ForceFieldManager *mgr)
 {
     if (mgr->state == FF_STATE_ACTIVE) {
@@ -112,6 +110,11 @@ void DrawForceField2D(ForceFieldManager *mgr)
     }
 }
 
+//----------------------------------------------------------------------------------
+// DrawForceFieldUI - Implementation Notes:
+// - Shows "Charge: FULL" when ready
+// - Displays percentage (0-100%) when in cooldown state
+//----------------------------------------------------------------------------------
 void DrawForceFieldUI(ForceFieldManager *mgr)
 {
     if (mgr->state == FF_STATE_READY) {
@@ -121,5 +124,3 @@ void DrawForceFieldUI(ForceFieldManager *mgr)
         DrawText(TextFormat("Charge: %i%%", (int)(mgr->charge * 100)), 10, 40, 20, COLOR_FORCEFIELD_UI_CHARGING);
     }
 }
-// - Displays percentage when not fully charged
-// (All UI/draw/update functions now receive a ForceFieldManager* and no globals remain.)

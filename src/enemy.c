@@ -19,10 +19,23 @@
 //----------------------------------------------------------------------------------
 
 // Render a single enemy ship using line-based 3D geometry
+//
+// @param enemy The enemy to render, must be active
 static void DrawEnemyShip(const Enemy *enemy);
 
-static Vector3 GetCubicBezierTangent(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t);
+// Calculate a point on a cubic Bezier curve using the standard cubic Bezier formula
+//
+// @param p0,p1,p2,p3 Control points defining the curve
+// @param t Parameter value along curve [0,1]
+// @return Position vector of point on curve
 static Vector3 GetCubicBezierPoint(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t);
+
+// Calculate the normalized tangent (derivative) vector at point t along a cubic Bezier curve
+//
+// @param p0,p1,p2,p3 Control points defining the curve
+// @param t Parameter value along curve [0,1]
+// @return Normalized tangent vector (or zero vector if tangent magnitude is negligible)
+static Vector3 GetCubicBezierTangent(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t);
 
 //----------------------------------------------------------------------------------
 // Public Function Implementations
@@ -156,9 +169,6 @@ void DrawEnemies(EnemyManager *mgr)
 // Internal Function Implementations
 //----------------------------------------------------------------------------------
 
-// Render a single enemy ship using line-based 3D geometry
-//
-// @param enemy The enemy to render, must be active
 static void DrawEnemyShip(const Enemy *enemy)
 {
     float r = enemy->radius;
@@ -235,11 +245,6 @@ static void DrawEnemyShip(const Enemy *enemy)
     rlPopMatrix();
 }
 
-// Calculate a point on a cubic Bezier curve using De Casteljau's algorithm
-//
-// @param p0,p1,p2,p3 Control points defining the curve
-// @param t Parameter value along curve [0,1]
-// @return Position vector of point on curve
 static Vector3 GetCubicBezierPoint(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
 {
     Vector3 result;
@@ -256,11 +261,6 @@ static Vector3 GetCubicBezierPoint(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p
     return result;
 }
 
-// Calculate the normalized tangent vector at point t along a cubic Bezier curve
-//
-// @param p0,p1,p2,p3 Control points defining the curve
-// @param t Parameter value along curve [0,1]
-// @return Normalized tangent vector (or forward vector if tangent is zero)
 static Vector3 GetCubicBezierTangent(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
 {
     Vector3 result;

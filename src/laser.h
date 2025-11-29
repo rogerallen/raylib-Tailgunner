@@ -40,10 +40,8 @@ void InitLasers(LaserManager *mgr);
 //
 // @param ray Ray representing the shot direction
 // @param camera Current camera for shot origin
-// @param explosionSound Sound to play on successful hit
 // @return Number of enemies hit by this shot
-// Fire lasers using given manager and optionally inspect enemies via EnemyManager
-int FireLasers(LaserManager *lmgr, struct EnemyManager *emgr, Ray ray, Camera camera, Sound explosionSound);
+int FireLasers(LaserManager *lmgr, struct EnemyManager *emgr, Ray ray, Camera camera);
 
 // Update all active lasers, handling lifetime and deactivation
 void UpdateLasers(LaserManager *mgr);

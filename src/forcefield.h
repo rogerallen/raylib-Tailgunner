@@ -36,20 +36,16 @@ typedef struct ForceFieldManager {
 // Initialize the force field system
 void InitForceField(ForceFieldManager *mgr);
 
-// Update force field state and handle enemy repulsion
-//
-// @param forceFieldHitSound Sound to play when enemies are repelled
-// Update will need access to enemies in order to apply repulsion
-// Update returns true if any enemies were repelled this frame (caller may play a sound)
-bool UpdateForceField(ForceFieldManager *mgr, struct EnemyManager *emgr);
-
 // Attempt to activate the force field
 //
-// @param forceFieldSound Sound to play on successful activation
-// @param forceFailSound Sound to play if activation fails (cooling down)
-// Attempt to activate the force field. Returns true on success, false if activation failed
-// (caller may play success/fail sounds).
+// Returns true on success, false if cooldown is still active.
+// Caller should handle playing success/fail sounds based on return value.
 bool ActivateForceField(ForceFieldManager *mgr);
+
+// Update force field state and handle enemy repulsion
+//
+// Returns true if any enemies were repelled this frame (caller may play hit sound).
+bool UpdateForceField(ForceFieldManager *mgr, struct EnemyManager *emgr);
 
 // Draw the 2D force field grid effect when active
 void DrawForceField2D(ForceFieldManager *mgr);

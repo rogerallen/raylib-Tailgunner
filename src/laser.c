@@ -17,12 +17,6 @@
 #include "raymath.h"
 
 //----------------------------------------------------------------------------------
-// Module Variables
-//----------------------------------------------------------------------------------
-
-// No global lasers array. Storage is held in LaserManager provided by caller.
-
-//----------------------------------------------------------------------------------
 // Public Function Implementations (see laser.h for documentation)
 //----------------------------------------------------------------------------------
 
@@ -43,8 +37,9 @@ void InitLasers(LaserManager *mgr)
 // - Places beam start points offset from camera for visual effect
 // - Only destroys closest enemy hit by ray
 // - Will overwrite oldest beam if all slots are active
+// - Audio playback is caller's responsibility (keeps function side-effect-free)
 //----------------------------------------------------------------------------------
-int FireLasers(LaserManager *lmgr, struct EnemyManager *emgr, Ray ray, Camera camera, Sound explosionSound)
+int FireLasers(LaserManager *lmgr, struct EnemyManager *emgr, Ray ray, Camera camera)
 {
     int hits = 0;
     // Find closest enemy hit by the ray
@@ -73,7 +68,6 @@ int FireLasers(LaserManager *lmgr, struct EnemyManager *emgr, Ray ray, Camera ca
         endPos = emgr->enemies[closestEnemyIndex].position;
         emgr->enemies[closestEnemyIndex].active = false;
         hits++;
-        // Note: audio playback moved to the caller to keep this function side-effect-free
     }
 
     // Spawn beam(s) into available laser slots. Place starts slightly offset left/right and forward.

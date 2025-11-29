@@ -107,7 +107,7 @@ int main(void)
         case STATE_PLAYING: {
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                 Ray ray = GetMouseRay(GetMousePosition(), camera);
-                int hits = FireLasers(&laserMgr, &enemyMgr, ray, camera, explosionSound);
+                int hits = FireLasers(&laserMgr, &enemyMgr, ray, camera);
                 score += hits;
                 if (hits > 0) PlaySound(explosionSound);
                 PlaySound(shootSound);
@@ -181,7 +181,7 @@ int main(void)
             SetLeaderboardActive(&lbMgr, true);
         } break;
         case STATE_LEADERBOARD: {
-            UpdateLeaderboard(&lbMgr, (int *)&gameState, score);
+            UpdateLeaderboard(&lbMgr, (int *)&gameState);
         } break;
         case STATE_HELP: {
             if (IsKeyPressed(KEY_ENTER) || IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
