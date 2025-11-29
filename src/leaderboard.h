@@ -40,7 +40,7 @@ void DrawLeaderboard(const LeaderboardManager *mgr);
 // DrawNameInput - Implementation Notes:
 // - Renders character input boxes for player initials
 // - Draws up/down arrows for selecting characters and a submit button
-void DrawNameInput(const LeaderboardManager *mgr);
+void DrawNameInput(LeaderboardManager *mgr);
 
 // InitLeaderboard - Implementation Notes:
 // - Initializes UI rectangles, default player initials, and state flags

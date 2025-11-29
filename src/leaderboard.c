@@ -95,6 +95,10 @@ static void ParseUserScores(const char *data, size_t size, LeaderboardEntry *ent
 static void ParseGlobalScores(const char *data, size_t size, LeaderboardEntry *entries, bool *fetchedFlag,
                               bool *fetchingFlag);
 
+// UpdateLeaderboardLayout - Recompute positions of name input boxes and buttons
+// This ensures UI elements follow the current screen size when the window is resized
+static void UpdateLeaderboardLayout(LeaderboardManager *mgr);
+
 // SavePlayerName - Persist current player name to platform storage
 // @param mgr: pointer to LeaderboardManager containing playerName to save
 static void SavePlayerName(const LeaderboardManager *mgr);
@@ -176,8 +180,11 @@ void DrawLeaderboard(const LeaderboardManager *mgr)
     }
 }
 
-void DrawNameInput(const LeaderboardManager *mgr)
+void DrawNameInput(LeaderboardManager *mgr)
 {
+    // Ensure layout is up-to-date with the current screen size
+    UpdateLeaderboardLayout((LeaderboardManager *)mgr);
+
     DrawText("Enter Your Initials", GetScreenWidth() / 2 - MeasureText("Enter Your Initials", 30) / 2,
              GetScreenHeight() / 2 - 100, 30, COLOR_TEXT_TITLE);
 
@@ -213,12 +220,8 @@ void InitLeaderboard(LeaderboardManager *mgr)
     mgr->userScoresFetching = false;
     mgr->requestUpdate = false;
 
-    for (int i = 0; i < LEADERBOARD_NAME_LENGTH; i++) {
-        mgr->charBoxes[i] = (Rectangle){GetScreenWidth() / 2 - 70 + i * 50, GetScreenHeight() / 2 - 20, 40, 40};
-        mgr->upArrows[i] = (Rectangle){mgr->charBoxes[i].x, mgr->charBoxes[i].y - 30, 40, 20};
-        mgr->downArrows[i] = (Rectangle){mgr->charBoxes[i].x, mgr->charBoxes[i].y + 50, 40, 20};
-    }
-    mgr->submitButton = (Rectangle){GetScreenWidth() / 2 - 60, GetScreenHeight() / 2 + 80, 120, 30};
+    // Compute layout based on current screen size
+    UpdateLeaderboardLayout(mgr);
 
     // Save pointer for emscripten callbacks
     s_lb_for_callbacks = mgr;
@@ -290,6 +293,8 @@ void UpdateLeaderboard(LeaderboardManager *mgr, int *gameState)
 bool UpdateNameInput(LeaderboardManager *mgr)
 {
     if (!mgr) return false;
+    // Ensure hitboxes follow current window size
+    UpdateLeaderboardLayout(mgr);
     for (int i = 0; i < LEADERBOARD_NAME_LENGTH; i++) {
         if (CheckCollisionPointRec(GetMousePosition(), mgr->upArrows[i]) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             mgr->playerName[i]++;
@@ -549,6 +554,20 @@ static void ParseGlobalScores(const char *data, size_t size, LeaderboardEntry *e
     cJSON_Delete(json);
     *fetchedFlag = true;
     *fetchingFlag = false;
+}
+
+static void UpdateLeaderboardLayout(LeaderboardManager *mgr)
+{
+    if (!mgr) return;
+    int baseX = GetScreenWidth() / 2 - 70;
+    int baseY = GetScreenHeight() / 2 - 20;
+
+    for (int i = 0; i < LEADERBOARD_NAME_LENGTH; i++) {
+        mgr->charBoxes[i] = (Rectangle){baseX + i * 50, baseY, 40, 40};
+        mgr->upArrows[i] = (Rectangle){mgr->charBoxes[i].x, mgr->charBoxes[i].y - 30, 40, 20};
+        mgr->downArrows[i] = (Rectangle){mgr->charBoxes[i].x, mgr->charBoxes[i].y + 50, 40, 20};
+    }
+    mgr->submitButton = (Rectangle){GetScreenWidth() / 2 - 60, GetScreenHeight() / 2 + 80, 120, 30};
 }
 
 static void SavePlayerName(const LeaderboardManager *mgr)

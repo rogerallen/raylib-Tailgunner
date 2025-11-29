@@ -78,14 +78,25 @@ int main(void)
     Sound lostLifeSound = LoadSound("resources/past.wav");
     Sound extraLifeSound = LoadSound("resources/forcefield.wav");
 
-    Rectangle showTop10Button = (Rectangle){GetScreenWidth() / 2 - 60, GetScreenHeight() / 2 + 80, 120, 30};
-    Rectangle showHelpButton = (Rectangle){GetScreenWidth() / 2 - 60, GetScreenHeight() / 2 + 120, 120, 30};
+    Rectangle showTop10Button = {0};
+    Rectangle showHelpButton = {0};
 
     int frameCount = 0;
     int touch_count_last_frame = 0;
     double previousTime = GetTime();
 
     while (!WindowShouldClose()) {
+        /* Recompute UI button positions each frame so they follow window size changes */
+        showTop10Button.x = GetScreenWidth() / 2 - 60;
+        showTop10Button.y = GetScreenHeight() / 2 + 80;
+        showTop10Button.width = 120;
+        showTop10Button.height = 30;
+
+        showHelpButton.x = GetScreenWidth() / 2 - 60;
+        showHelpButton.y = GetScreenHeight() / 2 + 120;
+        showHelpButton.width = 120;
+        showHelpButton.height = 30;
+
         switch (gameState) {
         case STATE_START: {
             if (CheckCollisionPointRec(GetMousePosition(), showTop10Button) &&
