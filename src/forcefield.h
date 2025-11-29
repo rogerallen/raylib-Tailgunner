@@ -48,7 +48,7 @@ bool ActivateForceField(ForceFieldManager *mgr);
 bool UpdateForceField(ForceFieldManager *mgr, struct EnemyManager *emgr);
 
 // Draw the 2D force field grid effect when active
-void DrawForceField2D(ForceFieldManager *mgr);
+void DrawForceField2D(const ForceFieldManager *mgr);
 
 // Draw the force field UI showing charge status
 void DrawForceFieldUI(ForceFieldManager *mgr);

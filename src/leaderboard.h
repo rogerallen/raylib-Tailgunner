@@ -35,12 +35,12 @@ typedef struct LeaderboardManager {
 // - Renders the global top 10 and the user's best scores when available
 // - Shows a loading message while data is being fetched
 // - Centers and formats text for the current screen resolution
-void DrawLeaderboard(LeaderboardManager *mgr);
+void DrawLeaderboard(const LeaderboardManager *mgr);
 
 // DrawNameInput - Implementation Notes:
 // - Renders character input boxes for player initials
 // - Draws up/down arrows for selecting characters and a submit button
-void DrawNameInput(LeaderboardManager *mgr);
+void DrawNameInput(const LeaderboardManager *mgr);
 
 // InitLeaderboard - Implementation Notes:
 // - Initializes UI rectangles, default player initials, and state flags

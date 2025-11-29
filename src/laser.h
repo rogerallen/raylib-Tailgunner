@@ -47,6 +47,6 @@ int FireLasers(LaserManager *lmgr, struct EnemyManager *emgr, Ray ray, Camera ca
 void UpdateLasers(LaserManager *mgr);
 
 // Render all active laser beams in 3D space
-void DrawLasers(LaserManager *mgr);
+void DrawLasers(const LaserManager *mgr);
 
 #endif // LASER_H

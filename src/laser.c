@@ -128,7 +128,7 @@ void UpdateLasers(LaserManager *mgr)
 // - Renders active laser beams as 3D lines
 // - Uses beam color property for rendering
 //----------------------------------------------------------------------------------
-void DrawLasers(LaserManager *mgr)
+void DrawLasers(const LaserManager *mgr)
 {
     for (int i = 0; i < MAX_LASERS; i++) {
         if (mgr->lasers[i].active) {

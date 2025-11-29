@@ -59,7 +59,7 @@ typedef struct {
 // @param nmemb: number of elements
 // @param userp: pointer to MemoryStruct instance to append into
 // @return number of bytes handled (size * nmemb) on success, 0 on failure
-static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp);
+static size_t WriteMemoryCallback(const void *contents, size_t size, size_t nmemb, void *userp);
 
 // CurlGetToMemory - Perform HTTP GET and store response body in MemoryStruct
 // @param url: null-terminated URL to fetch
@@ -97,7 +97,7 @@ static void ParseGlobalScores(const char *data, size_t size, LeaderboardEntry *e
 
 // SavePlayerName - Persist current player name to platform storage
 // @param mgr: pointer to LeaderboardManager containing playerName to save
-static void SavePlayerName(LeaderboardManager *mgr);
+static void SavePlayerName(const LeaderboardManager *mgr);
 
 // LoadPlayerName - Load saved player name from platform storage into manager
 // @param mgr: pointer to LeaderboardManager to receive loaded name
@@ -125,7 +125,7 @@ static LeaderboardManager *s_lb_for_callbacks = NULL;
 // Public functions
 // ================================================================================
 
-void DrawLeaderboard(LeaderboardManager *mgr)
+void DrawLeaderboard(const LeaderboardManager *mgr)
 {
     if (!mgr || !mgr->isActive) return;
 
@@ -176,7 +176,7 @@ void DrawLeaderboard(LeaderboardManager *mgr)
     }
 }
 
-void DrawNameInput(LeaderboardManager *mgr)
+void DrawNameInput(const LeaderboardManager *mgr)
 {
     DrawText("Enter Your Initials", GetScreenWidth() / 2 - MeasureText("Enter Your Initials", 30) / 2,
              GetScreenHeight() / 2 - 100, 30, COLOR_TEXT_TITLE);
@@ -379,7 +379,7 @@ static void onUserScoresSuccess(emscripten_fetch_t *fetch)
                     &s_lb_for_callbacks->userScoresFetching);
 }
 #else
-static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
+static size_t WriteMemoryCallback(const void *contents, size_t size, size_t nmemb, void *userp)
 {
     size_t realsize = size * nmemb;
     MemoryStruct *mem = (MemoryStruct *)userp;
@@ -523,7 +523,7 @@ static void ParseGlobalScores(const char *data, size_t size, LeaderboardEntry *e
     int entryIndex = 0;
     for (int i = 0; i < count && entryIndex < LEADERBOARD_MAX_SCORES; i++) {
         cJSON *item = cJSON_GetArrayItem(json, i);
-        cJSON *name = cJSON_GetObjectItemCaseSensitive(item, "userName");
+        const cJSON *name = cJSON_GetObjectItemCaseSensitive(item, "userName");
         cJSON *score = cJSON_GetObjectItemCaseSensitive(item, "score");
 
         if (cJSON_IsString(name) && (name->valuestring != NULL) && cJSON_IsNumber(score)) {
@@ -551,7 +551,7 @@ static void ParseGlobalScores(const char *data, size_t size, LeaderboardEntry *e
     *fetchingFlag = false;
 }
 
-static void SavePlayerName(LeaderboardManager *mgr)
+static void SavePlayerName(const LeaderboardManager *mgr)
 {
 #if defined(PLATFORM_WEB)
     emscripten_local_storage_set_item_js(PLAYER_NAME_STORAGE_KEY, mgr->playerName);

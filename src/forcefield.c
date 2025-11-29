@@ -78,7 +78,7 @@ bool UpdateForceField(ForceFieldManager *mgr, struct EnemyManager *emgr)
 // - square diagonals align with screen axes and are 3 wide, 2 high
 // - cell diagonal is min(screenWidth*0.8/3, screenHeight*0.8/2)
 //----------------------------------------------------------------------------------
-void DrawForceField2D(ForceFieldManager *mgr)
+void DrawForceField2D(const ForceFieldManager *mgr)
 {
     if (mgr->state == FF_STATE_ACTIVE) {
         int ffWidth = GetScreenWidth() * 0.80f;
