@@ -1,9 +1,10 @@
 # Raylib Tailgunner Clone
 
-Mostly vibe-coded via gemini-2.5-pro over 2 days.  I'm a bit astonished, honestly.  Now starting to mix 
-my own coding with gemini's.
+Play in your browser (supports desktop and mobile) on itch.io [here](https://rogerallen.itch.io/tailgunner)!
 
-Controls: **left click** to fire, **space** to activate the force field, Enter or click to start/continue.
+Started by mostly vibe-coding via gemini-2.5-pro over 2 days.  I'm a bit astonished, honestly.  Have enjoyed coding with Gemini & Copilot, but they really don't know OpenGL very well.  Had to figure some things out myself.
+
+Controls: **left click** to fire, **space** (**double click** on mobile) to activate the force field, Enter or click to start/continue.
 
 <p align="center">
 	<img src="resources/screenshot.png" alt="Tailgunner screenshot" width="800" />
