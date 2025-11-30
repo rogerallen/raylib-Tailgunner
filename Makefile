@@ -82,7 +82,7 @@ SRC = $(wildcard $(SRC_DIR)/*.c) $(SRC_DIR)/cJSON.c
 OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRC))
 
 # Targets
-.PHONY: all clean web analyze asan valgrind cppcheck clang-tidy scan-build gcc-warnings
+.PHONY: all clean web analyze asan valgrind cppcheck scan-build gcc-warnings
 
 all: $(TARGET)
 
@@ -180,7 +180,7 @@ gcc-warnings: clean
 	$(MAKE) all EXTRA_WARNINGS=1
 
 # Meta target to run all analysis tools
-analyze: cppcheck clang-tidy valgrind
+analyze: cppcheck clang-check scan-build
 	@echo "Analysis complete!"
 
 -include $(OBJS:.o=.d)
