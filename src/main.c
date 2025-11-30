@@ -70,13 +70,13 @@ int main(void)
     LeaderboardManager lbMgr = {0};
     InitLeaderboard(&lbMgr);
 
-    Sound shootSound = LoadSound("resources/shoot.wav");
-    Sound explosionSound = LoadSound("resources/explosion.wav");
-    Sound forceFieldSound = LoadSound("resources/forcefield.wav");
-    Sound forceFailSound = LoadSound("resources/forcefail.wav");
-    Sound forceFieldHitSound = LoadSound("resources/bounce.wav");
-    Sound lostLifeSound = LoadSound("resources/past.wav");
-    Sound extraLifeSound = LoadSound("resources/forcefield.wav");
+    Sound shootSound = LoadSound("resources/sounds/shoot.wav");
+    Sound explosionSound = LoadSound("resources/sounds/explosion.wav");
+    Sound forceFieldSound = LoadSound("resources/sounds/forcefield.wav");
+    Sound forceFailSound = LoadSound("resources/sounds/forcefail.wav");
+    Sound forceFieldHitSound = LoadSound("resources/sounds/bounce.wav");
+    Sound lostLifeSound = LoadSound("resources/sounds/past.wav");
+    Sound extraLifeSound = LoadSound("resources/sounds/forcefield.wav");
 
     Rectangle showTop10Button = {0};
     Rectangle showHelpButton = {0};
