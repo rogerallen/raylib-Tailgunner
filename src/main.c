@@ -186,7 +186,13 @@ int main(void)
             }
         } break;
         case STATE_SUBMIT_SCORE: {
-            SubmitScore(&lbMgr, score);
+            if (lbMgr.skipSubmission) {
+                // User chose to skip submitting their score
+                lbMgr.skipSubmission = false;
+            }
+            else {
+                SubmitScore(&lbMgr, score);
+            }
             ResetLeaderboardFlags(&lbMgr);
             gameState = STATE_LEADERBOARD;
             SetLeaderboardActive(&lbMgr, true);

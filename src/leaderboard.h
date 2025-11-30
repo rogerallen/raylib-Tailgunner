@@ -27,6 +27,8 @@ typedef struct LeaderboardManager {
     Rectangle downArrows[LEADERBOARD_NAME_LENGTH];
     Rectangle charBoxes[LEADERBOARD_NAME_LENGTH];
     Rectangle submitButton;
+    Rectangle skipButton;
+    bool skipSubmission;
 } LeaderboardManager;
 
 // Public Functions

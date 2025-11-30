@@ -189,19 +189,25 @@ void DrawNameInput(LeaderboardManager *mgr)
              GetScreenHeight() / 2 - 100, 30, COLOR_TEXT_TITLE);
 
     for (int i = 0; i < LEADERBOARD_NAME_LENGTH; i++) {
-        DrawRectangleRec(mgr->charBoxes[i], COLOR_INITIAL_BOX);
+        // Draw outlined character box and reversed-color initial
+        // DrawRectangleLinesEx(mgr->charBoxes[i], 2, COLOR_INITIAL_BOX);
         DrawText(TextFormat("%c", mgr->playerName[i]), mgr->charBoxes[i].x + 12, mgr->charBoxes[i].y + 5, 30,
-                 COLOR_BACKGROUND);
-        DrawTriangle((Vector2){mgr->upArrows[i].x + 20, mgr->upArrows[i].y},
-                     (Vector2){mgr->upArrows[i].x, mgr->upArrows[i].y + 20},
-                     (Vector2){mgr->upArrows[i].x + 40, mgr->upArrows[i].y + 20}, COLOR_INITIAL_BOX);
-        DrawTriangle((Vector2){mgr->downArrows[i].x + 20, mgr->downArrows[i].y + 20},
-                     (Vector2){mgr->downArrows[i].x + 40, mgr->downArrows[i].y},
-                     (Vector2){mgr->downArrows[i].x, mgr->downArrows[i].y}, COLOR_INITIAL_BOX);
+                 COLOR_INITIAL_BOX);
+        // Draw outlined up/down arrows
+        DrawTriangleLines((Vector2){mgr->upArrows[i].x + 20, mgr->upArrows[i].y},
+                          (Vector2){mgr->upArrows[i].x, mgr->upArrows[i].y + 20},
+                          (Vector2){mgr->upArrows[i].x + 40, mgr->upArrows[i].y + 20}, COLOR_INITIAL_BOX);
+        DrawTriangleLines((Vector2){mgr->downArrows[i].x + 20, mgr->downArrows[i].y + 20},
+                          (Vector2){mgr->downArrows[i].x + 40, mgr->downArrows[i].y},
+                          (Vector2){mgr->downArrows[i].x, mgr->downArrows[i].y}, COLOR_INITIAL_BOX);
     }
 
-    DrawRectangleRec(mgr->submitButton, COLOR_BUTTON_BOX);
-    DrawText("Submit", mgr->submitButton.x + 30, mgr->submitButton.y + 5, 20, COLOR_BACKGROUND);
+    // Draw outlined Submit and Skip buttons with reversed text color
+    DrawRectangleLinesEx(mgr->submitButton, 2, COLOR_BUTTON_BOX);
+    DrawText("Submit", mgr->submitButton.x + 30, mgr->submitButton.y + 5, 20, COLOR_BUTTON_BOX);
+
+    DrawRectangleLinesEx(mgr->skipButton, 2, COLOR_BUTTON_BOX);
+    DrawText("Skip", mgr->skipButton.x + 35, mgr->skipButton.y + 5, 20, COLOR_BUTTON_BOX);
 }
 
 void InitLeaderboard(LeaderboardManager *mgr)
@@ -219,6 +225,7 @@ void InitLeaderboard(LeaderboardManager *mgr)
     mgr->globalScoresFetching = false;
     mgr->userScoresFetching = false;
     mgr->requestUpdate = false;
+    mgr->skipSubmission = false;
 
     // Compute layout based on current screen size
     UpdateLeaderboardLayout(mgr);
@@ -308,6 +315,11 @@ bool UpdateNameInput(LeaderboardManager *mgr)
 
     if (CheckCollisionPointRec(GetMousePosition(), mgr->submitButton) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         SavePlayerName(mgr);
+        return true;
+    }
+    if (CheckCollisionPointRec(GetMousePosition(), mgr->skipButton) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        // User chose not to submit their score
+        mgr->skipSubmission = true;
         return true;
     }
     return false;
@@ -567,7 +579,8 @@ static void UpdateLeaderboardLayout(LeaderboardManager *mgr)
         mgr->upArrows[i] = (Rectangle){mgr->charBoxes[i].x, mgr->charBoxes[i].y - 30, 40, 20};
         mgr->downArrows[i] = (Rectangle){mgr->charBoxes[i].x, mgr->charBoxes[i].y + 50, 40, 20};
     }
-    mgr->submitButton = (Rectangle){GetScreenWidth() / 2 - 60, GetScreenHeight() / 2 + 80, 120, 30};
+    mgr->submitButton = (Rectangle){GetScreenWidth() / 2 - 140, GetScreenHeight() / 2 + 80, 120, 30};
+    mgr->skipButton = (Rectangle){mgr->submitButton.x + mgr->submitButton.width + 20, mgr->submitButton.y, 120, 30};
 }
 
 static void SavePlayerName(const LeaderboardManager *mgr)
