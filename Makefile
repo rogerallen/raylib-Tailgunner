@@ -17,13 +17,13 @@ OBJ_DIR = obj/$(PLATFORM)
 
 # Native build raylib path where lib/libraylib.* files are located
 # Download from https://github.com/raysan5/raylib/releases
-RAYLIB_NATIVE_PATH ?= /home/rallen/Documents/Devel/raylib/raylib-5.5_linux_amd64
+RAYLIB_NATIVE_PATH ?= /opt/raylib/native
 
 # Emscripten environment
-EMSDK_PATH ?= /home/rallen/Documents/Devel/emscripten/emsdk
+EMSDK_PATH ?= /opt/emsdk
 EMSDK_ENV = $(EMSDK_PATH)/emsdk_env.sh
 # Path to where raylib/libraylib.a is located.  Typically you will need to build this yourself.
-RAYLIB_EMSCRIPTEN_PATH ?= /home/rallen/Documents/Devel/raylib/raylib
+RAYLIB_EMSCRIPTEN_PATH ?= /opt/raylib/web
 
 # Build type
 DEBUG ?= 0
@@ -37,18 +37,18 @@ ifeq ($(PLATFORM), web)
     CC = emcc
     CFLAGS = -Wall -std=c99 -D_DEFAULT_SOURCE -Wno-missing-braces -DPLATFORM_WEB -MMD -MP
     ifeq ($(DEBUG), 1)
-        LDFLAGS = -O0 -g -s ASSERTIONS=1 
+        LDFLAGS = -O0 -g -s ASSERTIONS=1
     else
         LDFLAGS = -O3 -s ASSERTIONS=0
     endif
     ifeq ($(DEBUG_OPENGL), 1)
         CFLAGS += -DDEBUG_OPENGL
     endif
-    LDFLAGS += -s USE_GLFW=3 -s ASYNCIFY --preload-file resources
+    LDFLAGS += -s USE_GLFW=3 -s ASYNCIFY -s FETCH=1 --preload-file resources
     RAYLIB_PATH = $(RAYLIB_EMSCRIPTEN_PATH)
     INCLUDE_PATHS = -I$(SRC_DIR) -I$(RAYLIB_PATH)/src
     LIBRARY_PATHS = -L$(RAYLIB_PATH)/raylib
-    LDLIBS = -lraylib -lhtml5 -lfetch
+    LDLIBS = -lraylib
     TARGET = $(PROJECT_NAME).html
 else
     CC = gcc
@@ -110,7 +110,7 @@ run: all
 	LD_LIBRARY_PATH=$(RAYLIB_PATH)/lib ./$(PROJECT_NAME)
 
 webserve:
-	python3 -m http.server 8000
+	python3 -m http.server 8084
 
 zip: 
 	rm -f tailgunner$(ZIP_NUMBER).zip

@@ -1,0 +1,25 @@
+{
+    "name": "Raylib Tailgunner Dev",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.makefile-tools",
+                "ms-vscode.cpptools-extension-pack",
+                "google.geminicodeassist"
+            ]
+        }
+    },
+    "forwardPorts": [8000],
+    "remoteUser": "vscode",
+    "runArgs": [
+        "--net=host",
+        "--device", "/dev/snd",
+        "--group-add", "audio",
+        "-e", "DISPLAY=${localEnv:DISPLAY}",
+        "-v", "/tmp/.X11-unix:/tmp/.X11-unix"
+    ]
+}

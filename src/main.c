@@ -23,6 +23,7 @@
 #include "gl_debug.h"
 #include "laser.h"
 #include "leaderboard.h"
+#include "raymath.h"
 #include "starfield.h"
 #include <stdio.h>
 
@@ -58,6 +59,7 @@ int main(void)
     int lives = 0;
     int wave = 0;
     bool nameRequired = true;
+    Vector2 virtualMouse = {0};
 
     // Encapsulated managers (avoid globals)
     LaserManager laserMgr = {0};
@@ -112,12 +114,18 @@ int main(void)
             else if (IsKeyPressed(KEY_ENTER) || IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                 InitGame(&score, &lives, &wave, &laserMgr, &enemyMgr, &ffMgr, &lbMgr);
                 gameState = STATE_PLAYING;
-                HideCursor();
+                DisableCursor();
+                virtualMouse = (Vector2){(float)GetScreenWidth() / 2, (float)GetScreenHeight() / 2};
             }
         } break;
         case STATE_PLAYING: {
+            Vector2 mouseDelta = GetMouseDelta();
+            virtualMouse = Vector2Add(virtualMouse, mouseDelta);
+            virtualMouse.x = Clamp(virtualMouse.x, 0, (float)GetScreenWidth());
+            virtualMouse.y = Clamp(virtualMouse.y, 0, (float)GetScreenHeight());
+
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                Ray ray = GetMouseRay(GetMousePosition(), camera);
+                Ray ray = GetMouseRay(virtualMouse, camera);
                 int hits = FireLasers(&laserMgr, &enemyMgr, ray, camera);
                 score += hits;
                 if (hits > 0) PlaySound(explosionSound);
@@ -156,7 +164,7 @@ int main(void)
 
             if (lives <= 0) {
                 gameState = STATE_GAME_OVER;
-                ShowCursor();
+                EnableCursor();
             }
 
             // Check for extra life
@@ -237,9 +245,11 @@ int main(void)
             EndMode3D();
             DrawForceField2D(&ffMgr);
 
-            DrawCircleLines(GetMouseX(), GetMouseY(), 10, COLOR_CROSSHAIR_CIRCLE);
-            DrawLine(GetMouseX() - 20, GetMouseY(), GetMouseX() + 20, GetMouseY(), COLOR_CROSSHAIR_LINES);
-            DrawLine(GetMouseX(), GetMouseY() - 20, GetMouseX(), GetMouseY() + 20, COLOR_CROSSHAIR_LINES);
+            DrawCircleLines((int)virtualMouse.x, (int)virtualMouse.y, 10, COLOR_CROSSHAIR_CIRCLE);
+            DrawLine((int)virtualMouse.x - 20, (int)virtualMouse.y, (int)virtualMouse.x + 20, (int)virtualMouse.y,
+                     COLOR_CROSSHAIR_LINES);
+            DrawLine((int)virtualMouse.x, (int)virtualMouse.y - 20, (int)virtualMouse.x, (int)virtualMouse.y + 20,
+                     COLOR_CROSSHAIR_LINES);
 
             DrawText(TextFormat("Score: %i", score), 10, 10, 20, COLOR_TEXT_SCORE);
             DrawText(TextFormat("Lives: %i", lives), GetScreenWidth() - 100, 10, 20, COLOR_TEXT_LIVES);
