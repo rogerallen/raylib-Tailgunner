@@ -109,8 +109,8 @@ clean:
 run: all
 	LD_LIBRARY_PATH=$(RAYLIB_PATH)/lib ./$(PROJECT_NAME)
 
-webserve:
-	python3 -m http.server 8084
+webserve: web
+	python3 -m http.server 8000
 
 zip: 
 	rm -f tailgunner$(ZIP_NUMBER).zip
